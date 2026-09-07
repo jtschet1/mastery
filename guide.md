@@ -112,6 +112,50 @@ Run every problem through this sequence, out loud, even when alone. Interviewers
 > **Notes:**
 >
 
+### Pop!_OS / GNOME window tiling (Pop Shell)
+| Shortcut | Action |
+|---|---|
+| `Super+Y` | toggle auto-tile mode on/off |
+| `Super+Arrow` | move focus between tiled windows |
+| `Super+Shift+Arrow` | swap window positions |
+| `Super+R`, then arrows, `Enter` | resize mode |
+| `Super+G` | toggle a window floating/exempt from tiling |
+| drag window to screen edge | snap to half |
+| drag window to screen corner | snap to quarter |
+
+> **Notes:**
+>
+
+### Terminal tabs (GNOME Terminal default)
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Shift+T` | new tab |
+| `Ctrl+PageDown` / `Ctrl+PageUp` | next / previous tab |
+| `Alt+1` ... `Alt+9` | jump directly to tab N |
+| `Ctrl+Shift+W` | close current tab |
+| `Shift+PageUp` / `Shift+PageDown` | scroll scrollback up/down one page (no mouse) |
+| `Shift+Home` / `Shift+End` | jump to top / bottom of scrollback |
+| `Ctrl+Shift+F` | search scrollback |
+
+> **Notes:**
+>
+
+### tmux (terminal multiplexer — tabs + panes, works over SSH, persists sessions)
+| Shortcut (after prefix `Ctrl+B`) | Action |
+|---|---|
+| `Ctrl+B` `C` | new window (tab) |
+| `Ctrl+B` `N` / `P` | next / previous window |
+| `Ctrl+B` `0`-`9` | jump to window N |
+| `Ctrl+B` `%` | split pane vertically |
+| `Ctrl+B` `"` | split pane horizontally |
+| `Ctrl+B` arrow keys | move between panes |
+| `Ctrl+B` `[` | enter scroll/copy mode (needed to scroll — mouse wheel doesn't work by default) |
+| arrows / `PageUp` / `PageDown` (in copy mode) | scroll scrollback |
+| `q` | exit copy mode |
+
+> **Notes:**
+>
+
 ---
 
 ## 4. VS Code Keyboard-Only Reference
