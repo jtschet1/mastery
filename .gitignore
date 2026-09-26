@@ -1,0 +1,7 @@
+# Purchased textbooks: copyrighted (and large), so they stay local
+textbook/**/*.pdf
+
+# The author's companion repo, downloaded as a zip (github.com/ageron/handson-mlp)
+textbook/hands_on_ml/handson-mlp-main/
+
+__pycache__/

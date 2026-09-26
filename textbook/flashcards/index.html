@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textbook Flashcards</title>
+<style>
+  :root {
+    --bg: #f6f6f4;
+    --panel: #ffffff;
+    --ink: #1c1c1a;
+    --muted: #6d6d68;
+    --line: #e2e2dd;
+    --accent: #1f6f5c;
+    --miss: #a4472f;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a;
+      --panel: #212327;
+      --ink: #ececeb;
+      --muted: #9a9b98;
+      --line: #32343a;
+      --accent: #5fbfa3;
+      --miss: #e08a6d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+  }
+  header, main, footer { width: 100%; max-width: 720px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  select {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px;
+  }
+
+  .bar { height: 4px; background: var(--line); border-radius: 99px; margin: 16px 0 6px; overflow: hidden; }
+  .bar div { height: 100%; width: 0; background: var(--accent); transition: width .18s ease; }
+  .meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .meta b { font-weight: 600; color: var(--ink); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 28px; margin: 16px 0;
+    min-height: 260px; display: flex; flex-direction: column; gap: 18px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .q { font-size: 21px; line-height: 1.45; margin: 0; font-weight: 500; letter-spacing: -.01em; }
+  .a { font-size: 16px; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); white-space: pre-wrap; }
+  .hint { margin-top: auto; font-size: 13px; color: var(--muted); }
+  .missed-flag { color: var(--miss); }
+
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button kbd {
+    font: inherit; font-size: 11px; color: var(--muted); margin-left: 6px;
+    border: 1px solid var(--line); border-radius: 4px; padding: 0 4px;
+  }
+  button.primary { border-color: var(--accent); color: var(--accent); }
+  button.miss { border-color: var(--miss); color: var(--miss); }
+  button[aria-pressed="true"] { background: var(--line); }
+  .spacer { flex: 1; }
+
+  footer { margin-top: 22px; font-size: 13px; color: var(--muted); }
+  footer code { font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+  .keys { margin-top: 6px; }
+  .done { text-align: center; margin: auto 0; }
+  .done p { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Textbook Flashcards <span id="src"></span></h1>
+  <select id="deck" aria-label="Deck"></select>
+</header>
+
+<main>
+  <div class="bar"><div id="fill"></div></div>
+  <div class="meta">
+    <span id="count"></span>
+    <span><b id="known">0</b> got it · <b id="missed">0</b> to review</span>
+  </div>
+
+  <div class="card" id="card">
+    <div>
+      <div class="label"><span id="num"></span><span id="flag" class="missed-flag"></span></div>
+      <p class="q" id="q"></p>
+    </div>
+    <div id="answer" hidden>
+      <div class="label">Answer</div>
+      <p class="a" id="a"></p>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div class="card" id="donePanel" hidden>
+    <div>
+      <div class="label">Review queue clear</div>
+      <p class="q" id="doneMsg"></p>
+    </div>
+    <div class="row" style="margin-top:auto">
+      <button id="exitReview" class="primary">Back to the full deck<kbd>m</kbd></button>
+    </div>
+  </div>
+
+  <div class="row" id="controls">
+    <button id="prev">← Back<kbd>k</kbd></button>
+    <button id="flip" class="primary">Show answer<kbd>space</kbd></button>
+    <button id="next">Next →<kbd>j</kbd></button>
+    <span class="spacer"></span>
+    <button id="gotit" class="primary">Got it<kbd>1</kbd></button>
+    <button id="again" class="miss">Review again<kbd>2</kbd></button>
+  </div>
+
+  <div class="row" style="margin-top:8px">
+    <button id="shuffle">Shuffle<kbd>s</kbd></button>
+    <button id="only" aria-pressed="false">Only cards to review<kbd>m</kbd></button>
+    <button id="reset">Reset progress<kbd>r</kbd></button>
+  </div>
+</main>
+
+<footer>
+  Progress is saved in this browser only. Add a chapter folder with an
+  <code>exercises.md</code> and/or <code>concepts.md</code>, then re-run
+  <code>python3 textbook/flashcards/build_cards.py</code> to pull it in.
+  <div class="keys">Keys: <b>space</b> flip · <b>j/k</b> or <b>←/→</b> move · <b>1</b> got it · <b>2</b> review again · <b>s</b> shuffle · <b>m</b> review-only · <b>r</b> reset</div>
+</footer>
+
+<script src="cards.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var DECKS = window.DECKS || [];
+  var el = function (id) { return document.getElementById(id); };
+
+  if (!DECKS.length) {
+    el("q").textContent = "No cards found. Run: python3 textbook/flashcards/build_cards.py";
+    return;
+  }
+
+  // ---- persistence (best-effort; private windows can throw) ----------------
+  var KEY = "textbook-flashcards/v1";
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveStore() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ }
+  }
+  var store = loadStore();
+
+  var deck, order, pos, revealed, reviewOnly = false;
+
+  function status(card) {
+    var d = store[deck.id];
+    return (d && d[card.key]) || "new";
+  }
+  function setStatus(card, value) {
+    if (!store[deck.id]) { store[deck.id] = {}; }
+    store[deck.id][card.key] = value;
+    saveStore();
+  }
+
+  // ---- deck + queue --------------------------------------------------------
+  DECKS.forEach(function (d, i) {
+    var opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = d.title + " (" + d.cards.length + ")";
+    el("deck").appendChild(opt);
+  });
+  el("deck").hidden = DECKS.length < 2;
+
+  function pool() {
+    if (!reviewOnly) { return deck.cards.slice(); }
+    return deck.cards.filter(function (c) { return status(c) !== "known"; });
+  }
+
+  var LAST_DECK = "textbook-flashcards/last-deck";
+
+  function selectDeck(index) {
+    deck = DECKS[index];
+    el("deck").value = String(index);
+    try { localStorage.setItem(LAST_DECK, deck.id); } catch (e) { /* ignore */ }
+    el("src").textContent = "· " + deck.title;
+    document.title = deck.title + " — Flashcards";
+    order = pool();
+    pos = 0;
+    revealed = false;
+    render();
+  }
+
+  function shuffle() {
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    pos = 0;
+    revealed = false;
+    render();
+  }
+
+  function move(step) {
+    if (!order.length) { return; }
+    pos = (pos + step + order.length) % order.length;
+    revealed = false;
+    render();
+  }
+
+  function rate(value) {
+    if (!order.length) { return; }
+    var card = order[pos];
+    setStatus(card, value);
+
+    if (reviewOnly && value === "known") {
+      order.splice(pos, 1);
+      if (pos >= order.length) { pos = 0; }
+      revealed = false;
+      render();
+      return;
+    }
+    move(1);
+  }
+
+  // ---- render -------------------------------------------------------------
+  function setReviewOnly(value) {
+    reviewOnly = value;
+    el("only").setAttribute("aria-pressed", String(reviewOnly));
+    order = pool();
+    pos = 0;
+    revealed = false;
+    render();
+  }
+
+  function render() {
+    var counts = deck.cards.reduce(function (acc, c) {
+      var s = status(c);
+      if (s === "known") { acc.known++; } else if (s === "again") { acc.again++; }
+      return acc;
+    }, { known: 0, again: 0 });
+
+    var cleared = order.length === 0;
+    el("card").hidden = cleared;
+    el("controls").hidden = cleared;
+    el("donePanel").hidden = !cleared;
+
+    el("known").textContent = counts.known;
+    el("missed").textContent = deck.cards.length - counts.known;
+    el("fill").style.width = (counts.known / deck.cards.length * 100) + "%";
+
+    if (cleared) {
+      el("count").textContent = "Review queue clear";
+      el("doneMsg").textContent = counts.known === deck.cards.length
+        ? "Every card in this deck is marked \u201cgot it.\u201d"
+        : "Nothing left to review right now.";
+      return;
+    }
+
+    var card = order[pos];
+    el("num").textContent = (card.kind === "exercise" ? "Book exercise " : "Concept ") + card.n;
+    el("flag").textContent = status(card) === "again" ? " · marked for review" : "";
+    el("q").textContent = card.q;
+    el("a").textContent = card.a;
+    el("answer").hidden = !revealed;
+    el("flip").firstChild.nodeValue = revealed ? "Hide answer" : "Show answer";
+    el("hint").textContent = revealed
+      ? "Did you get it? 1 = got it, 2 = review again."
+      : "Answer it out loud first, then reveal.";
+
+    el("count").textContent = "Card " + (pos + 1) + " / " + order.length +
+      (reviewOnly ? " (review queue)" : "");
+  }
+
+  // ---- events -------------------------------------------------------------
+  el("deck").addEventListener("change", function (e) { selectDeck(+e.target.value); });
+  el("card").addEventListener("click", function () { revealed = !revealed; render(); });
+  el("flip").addEventListener("click", function () { revealed = !revealed; render(); });
+  el("next").addEventListener("click", function () { move(1); });
+  el("prev").addEventListener("click", function () { move(-1); });
+  el("gotit").addEventListener("click", function () { rate("known"); });
+  el("again").addEventListener("click", function () { rate("again"); });
+  el("shuffle").addEventListener("click", shuffle);
+  el("only").addEventListener("click", function () { setReviewOnly(!reviewOnly); });
+  el("exitReview").addEventListener("click", function () { setReviewOnly(false); });
+  el("reset").addEventListener("click", function () {
+    if (!confirm("Clear your got-it / review marks for " + deck.title + "?")) { return; }
+    delete store[deck.id];
+    saveStore();
+    setReviewOnly(reviewOnly);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.tagName === "SELECT") { return; }
+    var key = e.key;
+    if (key === " " || e.code === "Space" || key === "Enter") {
+      if (order.length) { revealed = !revealed; render(); }
+    }
+    else if (key === "j" || key === "ArrowRight") { move(1); }
+    else if (key === "k" || key === "ArrowLeft") { move(-1); }
+    else if (key === "1") { rate("known"); }
+    else if (key === "2") { rate("again"); }
+    else if (key === "s") { shuffle(); }
+    else if (key === "m") { el("only").click(); }
+    else if (key === "r") { el("reset").click(); }
+    else { return; }
+    e.preventDefault();
+  });
+
+  var lastId = null;
+  try { lastId = localStorage.getItem(LAST_DECK); } catch (e) { /* ignore */ }
+  var lastIndex = DECKS.findIndex(function (d) { return d.id === lastId; });
+  selectDeck(lastIndex >= 0 ? lastIndex : 0);
+})();
+</script>
+</body>
+</html>
