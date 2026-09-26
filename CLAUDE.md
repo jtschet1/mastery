@@ -11,8 +11,9 @@ the source of truth for how they want to practice. Read it before assisting in t
   and progress trackers. The user edits this over time as they learn.
 - `problems/` — individual problem work, one notebook per problem, grouped by source
   (`problems/leetcode/`, `problems/leetcode/75/`, `problems/bctci/`).
-- `textbook/` — chapter-by-chapter study: notes, end-of-chapter exercises, and concept
-  cards, plus a small flashcard app that turns them into one study deck per chapter.
+- `textbook/` — chapter-by-chapter study: notes, the book's end-of-chapter exercises, and
+  our additional cards, plus a small flashcard app that turns them into one study deck per
+  chapter.
   See the conventions below.
 
 ## How to help in this directory
@@ -67,20 +68,31 @@ textbook/
   hands_on_ml/
     ch01-machine-learning-landscape/
       notes.ipynb    # notes, worked examples, scratch implementations
-      exercises.md   # the book's end-of-chapter conceptual questions + answers
-      concepts.md    # extra cards on chapter content the exercises don't cover
+      exercises.md             # the book's end-of-chapter conceptual questions + answers
+      additional_exercises.md  # our own cards on the chapter (not the author's)
     appA-autodiff/   # appendices use appX- and sort after the chapters
     handson-mlp-main/  # the author's repo (Apache 2.0): notebooks + exercise solutions
 ```
 
 Keep the `chNN-` prefix so chapters sort in reading order. Notes can be split across
-several notebooks in the folder if a chapter warrants it.  answers
+several notebooks in the folder if a chapter warrants it. `exercises.md` answers
 come from the author's published solutions where they exist, and each file's intro
 paragraph says where its answers came from. The book's coding exercises aren't cards;
 each `exercises.md` intro lists them so they can be done in a notebook.
 
-`exercises.md` and `concepts.md` use the same format — one `##` heading per question,
-with the answer directly underneath:
+Keep the author's authority separate from ours: `exercises.md` holds the book's
+questions (verbatim) and the author's answers. Where the author hasn't published
+answers (Hands-On ML chapters 15, 16 and 18), we write them from the chapter text,
+and the file's intro says those answers are ours, not the author's; if the author
+publishes solutions later, swap theirs in. Cards we write from scratch go in
+`additional_exercises.md`, which tops each chapter up to 20 cards in total (the
+author's questions count) and covers what the book's exercises don't: concepts,
+library APIs and syntax, and code structure.
+Appendices, which have no exercises, get an `additional_exercises.md` sized to their
+length.
+
+`exercises.md` and `additional_exercises.md` use the same format — one `##` heading
+per question, with the answer directly underneath:
 
     # Chapter 1 — The Machine Learning Landscape
 
@@ -91,15 +103,19 @@ with the answer directly underneath:
 The first `#` heading becomes the deck title. The `4.` prefix is optional (cards number
 by position without it). Every `##` becomes a card, so any other section in the file
 should be `###` or lower; text before the first `##` (the intro paragraph) isn't a
-card. Answer paragraphs are joined, but `-` / `1.` list lines are kept as lists. A
-question with no answer under it yet is skipped with a warning, which makes it fine to
-stub out a chapter's questions before writing answers.
+card. Answer paragraphs are joined, but `-` / `1.` list lines are kept as lists, and
+code blocks fenced with three backticks are kept line for line (shown in monospace). The app
+shows everything else as plain text, so don't use other markdown (bold, backticks,
+links) or LaTeX in cards; write math with Unicode (×, ², θ, ≈). A question with no
+answer under it yet is skipped with a warning, which makes it fine to stub out a
+chapter's questions before writing answers.
 
 
 ### Flashcards
 
 `textbook/flashcards/index.html` is a standalone study page — no server, no dependencies,
-just open it in a browser. After adding or editing any `exercises.md` or `concepts.md`:
+just open it in a browser. After adding or editing any `exercises.md` or
+`additional_exercises.md`:
 
 ```
 python3 textbook/flashcards/build_cards.py
@@ -107,9 +123,10 @@ python3 textbook/flashcards/build_cards.py
 
 That regenerates `textbook/flashcards/cards.js`; it's generated output, so don't
 hand-edit it. Each chapter folder becomes one deck, with its `exercises.md` cards
-(labelled "Book exercise N") followed by its `concepts.md` cards ("Concept N").
-Study progress (got it / review again) is stored in the browser's localStorage, keyed
-by the chapter folder path plus the card's number (`e4`, `c12`). So renaming or moving
+(labelled "Book exercise N") followed by its `additional_exercises.md` cards
+("Additional exercise N"). Study progress (got it / review again) is stored in the
+browser's localStorage, keyed by the chapter folder path plus the card's number (`e4`,
+`a12`). So renaming or moving
 a chapter folder resets that chapter's progress, and renumbering cards shuffles which
 cards count as known. Add new cards at the end of a file rather than renumbering.
 

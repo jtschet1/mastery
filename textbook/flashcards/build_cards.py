@@ -6,14 +6,14 @@ Expected layout — one folder per chapter:
     textbook/
       hands_on_ml/
         ch01-machine-learning-landscape/
-          notes.ipynb       <- your notes (ignored here)
-          exercises.md      <- the book's end-of-chapter questions
-          concepts.md       <- extra cards covering the chapter text
+          notes.ipynb                <- your notes (ignored here)
+          exercises.md               <- the book's end-of-chapter questions
+          additional_exercises.md    <- our own cards on the chapter, not the author's
 
 Either card file is optional; a folder with at least one becomes a deck, with
-exercise cards first, then concept cards. Only chapter folders count (one level
-below a book folder): a card file anywhere else, like a book-level list of every
-exercise, is skipped. Both files use the same format:
+the book's exercise cards first, then the additional ones. Only chapter folders
+count (one level below a book folder): a card file anywhere else, like a
+book-level list of every exercise, is skipped. Both files use the same format:
 
     # Chapter 1 - The Machine Learning Landscape   <- deck title (first H1)
 
@@ -25,6 +25,10 @@ Every "##" heading becomes a card, so keep stray sections out of these files (or
 demote them to "###", which is treated as part of the answer body). Text before
 the first "##" is ignored, so it's a good place for notes about the file.
 
+Answers are plain text: hard-wrapped lines are joined, but "- " and "1. " list
+items stay on their own lines, and ``` fenced code blocks are kept line for line
+(the page shows them in a monospace font).
+
 Usage:
     python3 textbook/flashcards/build_cards.py
 
@@ -35,25 +39,39 @@ script tag, so opening the page as a file:// URL works without a web server).
 import json
 import re
 import sys
+import textwrap
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEXTBOOK_DIR = REPO_ROOT / "textbook"
 OUTPUT = Path(__file__).resolve().parent / "cards.js"
 
-# (filename, card kind, key prefix) — decks list exercise cards before concept cards.
+# (filename, card kind, key prefix) — decks list the book's exercises first.
 CARD_FILES = [
     ("exercises.md", "exercise", "e"),
-    ("concepts.md", "concept", "c"),
+    ("additional_exercises.md", "additional", "a"),
 ]
 
 TITLE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 LIST_ITEM = re.compile(r"^\s*(?:[-*•]|\d{1,2}[.)])\s+")
 # A card front: an H2 heading, with an optional "12." prefix we strip for display.
 CARD_HEADING = re.compile(r"^##\s+(?:(\d{1,3})\.\s*)?(.+?)\s*$", re.MULTILINE)
+FENCE = re.compile(r"^[ \t]*```.*?^[ \t]*```[ \t]*$", re.MULTILINE | re.DOTALL)
 
 
 def normalize(text):
+    """unwrap() the prose, but keep ``` code blocks exactly as written."""
+    parts, start = [], 0
+    for fence in FENCE.finditer(text):
+        parts.append(unwrap(text[start:fence.start()]))
+        code = textwrap.dedent(fence.group()).splitlines()
+        parts.append("\n".join(line.rstrip() for line in code))
+        start = fence.end()
+    parts.append(unwrap(text[start:]))
+    return "\n\n".join(part for part in parts if part)
+
+
+def unwrap(text):
     """Unwrap hard-wrapped prose, keeping paragraph breaks and list items.
 
     A wrapped line is joined onto the one above it, unless it starts a list
@@ -77,7 +95,10 @@ def normalize(text):
 
 def parse_cards(path, kind, prefix):
     text = path.read_text()
-    headings = list(CARD_HEADING.finditer(text))
+    code = [fence.span() for fence in FENCE.finditer(text)]
+    # A "## " line inside a code block is code, not the next card.
+    headings = [h for h in CARD_HEADING.finditer(text)
+                if not any(start <= h.start() < end for start, end in code)]
 
     cards, empty = [], []
     for i, heading in enumerate(headings):
@@ -153,7 +174,7 @@ def main():
     if not folders:
         sys.exit(
             f"no card files found under {TEXTBOOK_DIR}\n"
-            f"expected e.g. textbook/<book>/ch01-<slug>/exercises.md or concepts.md"
+            f"expected e.g. textbook/<book>/ch01-<slug>/exercises.md or additional_exercises.md"
         )
 
     decks = []

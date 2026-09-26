@@ -47,6 +47,7 @@
   select {
     font: inherit; font-size: 14px; color: var(--ink); background: var(--panel);
     border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px;
+    max-width: 100%;  /* long deck titles would otherwise widen the page on phones */
   }
 
   .bar { height: 4px; background: var(--line); border-radius: 99px; margin: 16px 0 6px; overflow: hidden; }
@@ -63,6 +64,11 @@
   .label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
   .q { font-size: 21px; line-height: 1.45; margin: 0; font-weight: 500; letter-spacing: -.01em; }
   .a { font-size: 16px; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); white-space: pre-wrap; }
+  .a pre {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin: 10px 0; overflow-x: auto; white-space: pre;
+  }
   .hint { margin-top: auto; font-size: 13px; color: var(--muted); }
   .missed-flag { color: var(--miss); }
 
@@ -109,7 +115,7 @@
     </div>
     <div id="answer" hidden>
       <div class="label">Answer</div>
-      <p class="a" id="a"></p>
+      <div class="a" id="a"></div>
     </div>
     <div class="hint" id="hint"></div>
   </div>
@@ -142,7 +148,7 @@
 
 <footer>
   Progress is saved in this browser only. Add a chapter folder with an
-  <code>exercises.md</code> and/or <code>concepts.md</code>, then re-run
+  <code>exercises.md</code> and/or <code>additional_exercises.md</code>, then re-run
   <code>python3 textbook/flashcards/build_cards.py</code> to pull it in.
   <div class="keys">Keys: <b>space</b> flip · <b>j/k</b> or <b>←/→</b> move · <b>1</b> got it · <b>2</b> review again · <b>s</b> shuffle · <b>m</b> review-only · <b>r</b> reset</div>
 </footer>
@@ -171,6 +177,30 @@
   var store = loadStore();
 
   var deck, order, pos, revealed, reviewOnly = false;
+
+  // The book's own exercises vs. the cards we wrote ourselves.
+  var LABELS = { exercise: "Book exercise ", additional: "Additional exercise " };
+
+  // Answers are plain text; ``` fenced blocks become monospace code.
+  function renderAnswer(node, text) {
+    node.textContent = "";
+    var lines = [], inCode = false;
+    function flush() {
+      var chunk = lines.join("\n");
+      lines = [];
+      if (inCode) {
+        var pre = document.createElement("pre");
+        pre.textContent = chunk;
+        node.appendChild(pre);
+      } else if (chunk.trim()) {
+        node.appendChild(document.createTextNode(chunk.replace(/^\n+|\n+$/g, "")));
+      }
+    }
+    text.split("\n").forEach(function (line) {
+      if (/^```/.test(line)) { flush(); inCode = !inCode; } else { lines.push(line); }
+    });
+    flush();
+  }
 
   function status(card) {
     var d = store[deck.id];
@@ -277,10 +307,10 @@
     }
 
     var card = order[pos];
-    el("num").textContent = (card.kind === "exercise" ? "Book exercise " : "Concept ") + card.n;
+    el("num").textContent = (LABELS[card.kind] || "Card ") + card.n;
     el("flag").textContent = status(card) === "again" ? " · marked for review" : "";
     el("q").textContent = card.q;
-    el("a").textContent = card.a;
+    renderAnswer(el("a"), card.a);
     el("answer").hidden = !revealed;
     el("flip").firstChild.nodeValue = revealed ? "Hide answer" : "Show answer";
     el("hint").textContent = revealed

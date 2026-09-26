@@ -4,7 +4,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch01-machine-learning-landscape",
     "title": "Chapter 1 \u2014 The Machine Learning Landscape",
     "sources": [
-      "textbook/hands_on_ml/ch01-machine-learning-landscape/exercises.md"
+      "textbook/hands_on_ml/ch01-machine-learning-landscape/exercises.md",
+      "textbook/hands_on_ml/ch01-machine-learning-landscape/additional_exercises.md"
     ],
     "cards": [
       {
@@ -139,6 +140,313 @@ window.DECKS = [
         "kind": "exercise",
         "q": "What can go wrong if you tune hyperparameters using the test set?",
         "a": "If you tune hyperparameters using the test set, you risk overfitting the test set, and the generalization error you measure will be optimistic (you may launch a model that performs worse than you expect)."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "What is self-supervised learning, and how is a self-supervised model usually put to work on the task you actually care about?",
+        "a": "Self-supervised learning generates labels from unlabeled data itself, so any supervised algorithm can train on it. For example, mask a small patch of each image and train a model to restore it: the masked image is the input, the original is the label. Language models are pretrained similarly, by predicting hidden words in huge text corpora.\n\nThe pretrained model is rarely the end goal. To fill in blanks well it must learn what the data looks like (restoring a cat's masked face means knowing cats from dogs), so you adapt it to the task you care about, say classifying pet species, and fine-tune it on a labeled dataset, which can be much smaller. Reusing knowledge from one task on another is called transfer learning.\n\nIt's best treated as its own category: the data is unlabeled, yet training uses generated labels and targets supervised-style tasks such as classification, not clustering."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-ch02-end-to-end-machine-learning-project",
+    "title": "Chapter 2 \u2014 End-to-End Machine Learning Project",
+    "sources": [
+      "textbook/hands_on_ml/ch02-end-to-end-machine-learning-project/exercises.md",
+      "textbook/hands_on_ml/ch02-end-to-end-machine-learning-project/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Walk through the main steps of an end-to-end machine learning project.",
+        "a": "Eight steps, looping back as you learn more:\n\n1. Look at the big picture: frame the problem around the business objective and choose a performance measure.\n2. Get the data, take a quick look at its structure, and set aside a test set right away.\n3. Explore and visualize the training set: correlations, data quirks, promising attribute combinations.\n4. Prepare the data with reusable transformations (cleaning, encoding, feature engineering, scaling), ideally in one pipeline.\n5. Select and train models: try several quickly, compare them with cross-validation, and shortlist two to five.\n6. Fine-tune the shortlist (hyperparameter search, ensembles), analyze the best models' errors and fairness across subgroups, then evaluate the final model once on the test set.\n7. Present the solution: what worked, assumptions, limitations, and reproducible code.\n8. Launch, monitor, and maintain: deploy, watch live performance and input quality, retrain regularly, and keep backups for rollback."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Before writing any code for a new ML project, what should you pin down about the problem, and why?",
+        "a": "- The business objective: how the model's output will be used and what the company gains. It drives the framing, the choice of algorithms and performance measure, and how much tuning effort is worth it.\n- The current solution, if any: it gives a performance baseline and hints for solving the problem (the housing experts' manual estimates were often off by more than 30%).\n- The kind of task: supervised or not, classification or regression, batch or online. Housing is a supervised regression task, multiple (several input features) and univariate (one output per district), and plain batch learning suffices: no continuous data flow, no need to adapt rapidly, and the data fits in memory.\n- Your assumptions, checked with whoever consumes the output: if the downstream system only used price categories (cheap, medium, expensive), you'd need a classifier, not a regressor: better to learn that now than after months of work."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Compare RMSE and MAE as regression performance measures: what does each compute, and when would you prefer MAE?",
+        "a": "RMSE(X, y, h) = \u221a( (1/m) \u2211\u1d62 (h(x\u207d\u2071\u207e) \u2212 y\u207d\u2071\u207e)\u00b2 ) and MAE(X, y, h) = (1/m) \u2211\u1d62 |h(x\u207d\u2071\u207e) \u2212 y\u207d\u2071\u207e|, where the sums run over the m instances, x\u207d\u2071\u207e is an instance's feature vector, y\u207d\u2071\u207e its label, and h the model's prediction function (the hypothesis).\n\nBoth measure the distance between the vector of predictions and the vector of targets: RMSE corresponds to the Euclidean (\u2113\u2082) norm and MAE to the Manhattan (\u2113\u2081) norm. The higher the norm index, the more it focuses on large values and neglects small ones, so RMSE weighs large errors heavily and is more sensitive to outliers. It's the usual default and works very well when outliers are exponentially rare, as in a bell-shaped distribution; when the data has many outliers, prefer MAE."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Why should you set aside the test set before exploring the data, and how can you keep the split stable across runs and dataset updates?",
+        "a": "Your brain is a powerful pattern detector, so it overfits too: patterns you notice in the test set can steer your choice of model, so your later test-set estimate of the generalization error is too optimistic. This is data snooping bias.\n\nA plain random split changes on every run, so over time you'd see the whole dataset. Fixing the random seed or saving the test set solves that, but both break when you fetch an updated dataset. Instead, hash each instance's unique, immutable ID and put the instance in the test set if the hash falls in the lowest 20% of the hash range. New instances are split in the same proportion, and no former training instance ever moves into the test set:\n\n```python\nfrom zlib import crc32\n\ndef is_id_in_test_set(identifier, test_ratio):\n    return crc32(np.int64(identifier)) < test_ratio * 2**32\n```\n\nWith no ID column, use the row index (if new rows are only appended, never deleted) or build an ID from stable features."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "What is stratified sampling, and how do you stratify a train/test split on a continuous attribute such as median income?",
+        "a": "When the dataset isn't large, especially relative to the number of attributes, a purely random split can produce a skewed test set. Stratified sampling divides the population into homogeneous subgroups (strata) and draws the right number of instances from each, so the test set keeps the full dataset's proportions for an attribute you know matters.\n\nA continuous attribute must first be binned into categories, with few enough strata that each has plenty of instances. Then pass those categories as stratify:\n\n```python\nhousing_full[\"income_cat\"] = pd.cut(housing_full[\"median_income\"],\n                                    bins=[0., 1.5, 3.0, 4.5, 6., np.inf],\n                                    labels=[1, 2, 3, 4, 5])\nstrat_train_set, strat_test_set = train_test_split(\n    housing_full, test_size=0.2, stratify=housing_full[\"income_cat\"],\n    random_state=42)\n```\n\nFor several stratified splits, StratifiedShuffleSplit(n_splits=10, test_size=0.2, random_state=42) has a split(X, strata) method that yields train and test indices, not the data itself. Drop the helper column afterwards."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "What does corr() tell you when exploring a dataset, and what are the blind spots of the standard correlation coefficient?",
+        "a": "housing.corr(numeric_only=True) computes Pearson's r between every pair of numerical attributes; sorting the target's column shows which features track it most (median income, at about 0.69, stood out). Values near 1 mean a strong positive linear correlation, near \u22121 a strong negative one, and near 0 no linear correlation.\n\nBlind spots:\n- It only measures linear correlation: r \u2248 0 can hide a strong nonlinear relationship.\n- It says nothing about slope: height in inches and height in centimeters have r = 1, as does any variable paired with a positively rescaled copy of itself.\n\nSo also plot the most promising pairs, with Pandas' scatter_matrix() or a single scatterplot. The income-versus-value plot also revealed quirks worth cleaning up: a horizontal line at the 500,000 USD price cap and less obvious lines at a few lower values."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "What are your options for handling missing values, and why use Scikit-Learn's SimpleImputer rather than Pandas' fillna()?",
+        "a": "You can drop the affected instances (dropna()), drop the whole attribute (drop()), or impute, i.e., replace missing values with something like the median (fillna()). Imputation is the least destructive.\n\nSimpleImputer(strategy=\"median\") learns each column's median in fit() and stores the medians in statistics_, so transform() applies the same values to the validation set, the test set, and new data in production, and it fits into a pipeline. Apply it to every numerical column, not just those with gaps today, since live data could be missing anything. The median needs numbers, so first select them with housing.select_dtypes(include=[np.number]). Other strategies are \"mean\", \"most_frequent\", and \"constant\" with fill_value; the last two also work on non-numerical data. For numerical features, KNNImputer (mean of the k nearest neighbors' values) and IterativeImputer (a regression model per feature, refined over several rounds) are more powerful."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Describe Scikit-Learn's core object types and the conventions that make estimators easy to inspect.",
+        "a": "- Estimators learn from data with fit(X), or fit(X, y) for supervised learning. Anything else that guides the estimation is a hyperparameter, set in the constructor and stored as an instance variable (like SimpleImputer's strategy).\n- Transformers are estimators that can also transform(X), usually using what fit() learned; fit_transform() is equivalent to fit() then transform(), and sometimes faster.\n- Predictors are estimators with predict(X) for new instances and score() to measure prediction quality (R\u00b2 for regressors, accuracy for classifiers).\n\nHyperparameters are public attributes (imputer.strategy), and learned parameters are public attributes ending with an underscore (imputer.statistics_). Datasets are NumPy arrays or SciPy sparse matrices, and hyperparameters are plain strings or numbers, not custom classes. Estimators compose, for example into pipelines, and come with sensible defaults. Gotcha: transformers output NumPy arrays even when fed DataFrames, unless you call sklearn.set_config(transform_output=\"pandas\")."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "How should you encode a categorical attribute like ocean_proximity, and why is OneHotEncoder safer than pd.get_dummies() in production?",
+        "a": "OrdinalEncoder maps each category to an integer, but models then assume nearby numbers are similar, which only makes sense for ordered categories such as bad, average, good, excellent. For unordered categories, one-hot encoding creates one binary feature per category, exactly one of which is 1.\n\nOneHotEncoder learns the categories in fit() (categories_) and always outputs one column per learned category, in the same order, so production data gets exactly the features the model was trained on. pd.get_dummies() only creates columns for the categories present in whatever data it's given: a batch with fewer categories yields fewer columns, and an unknown category yields a new one. OneHotEncoder raises an error on unknown categories by default, or encodes them as all zeros with handle_unknown=\"ignore\". Its output is a SciPy sparse matrix by default (sparse_output=False gives a dense array), and get_feature_names_out() names the columns."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Compare min-max scaling and standardization, and explain the rule for fitting scalers.",
+        "a": "Most models perform badly when numerical features have very different scales (total rooms: about 6 to 39,320; median income: 0 to 15).\n\n- Min-max scaling (MinMaxScaler, often called normalization): x\u2032 = (x \u2212 min) / (max \u2212 min), which maps training values to 0\u20131, or to another range via feature_range, e.g., (-1, 1) for neural networks, which work best with zero-mean inputs.\n- Standardization (StandardScaler): x\u2032 = (x \u2212 \u03bc) / \u03c3, giving zero mean and unit standard deviation. Values aren't bounded to a range, but outliers affect it much less: a single erroneous income of 100 would squash every other min-max-scaled income into 0\u20130.15.\n\nFit a scaler (fit() or fit_transform()) on the training set only, then use its transform() on the validation set, the test set, and new data. New outliers can land outside the min-max range unless you set clip=True. For sparse input, StandardScaler(with_mean=False) preserves sparsity."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "How can you transform heavy-tailed or multimodal features so models can make better use of them?",
+        "a": "Scaling a heavy-tailed feature would squash most values into a small range, so shrink the tail first. For a positive feature with a long right tail, take its square root (or a power between 0 and 1); for a really long tail like a power law (population), take the logarithm, which can bring it close to Gaussian. Alternatively, bucketize it into roughly equal-frequency buckets (e.g., replace each value with its percentile), giving a nearly uniform feature that needs no further scaling.\n\nFor a multimodal feature (several peaks, like housing_median_age):\n- Bucketize it and one-hot encode the bucket IDs as categories, so the model can learn different rules for different ranges.\n- Or add a similarity feature per main mode with a Gaussian radial basis function: exp(\u2212\u03b3(x \u2212 35)\u00b2) equals 1 at x = 35 and decays as x moves away, faster for larger \u03b3. rbf_kernel(housing[[\"housing_median_age\"]], [[35]], gamma=0.1) computes it."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "What are the two ways to write a custom transformer in Scikit-Learn, and what rules must a custom transformer class follow?",
+        "a": "If nothing needs to be learned, wrap a function: FunctionTransformer(np.log, inverse_func=np.exp). kw_args passes extra arguments, feature_names_out (\"one-to-one\" or a callable) makes get_feature_names_out() work, and inverse_func makes it reversible, e.g., for use in a TransformedTargetRegressor.\n\nIf it must learn something in fit(), write a class. Scikit-Learn relies on duck typing, but TransformerMixin gives you fit_transform() for free, and BaseEstimator gives you get_params() and set_params(), which hyperparameter search needs, provided the constructor has no variable-length argument lists. The constructor just stores each hyperparameter under the same name; fit() accepts y=None even if unused, sets learned attributes ending in an underscore (plus n_features_in_), and returns self. This one finds k-means clusters and outputs each instance's RBF similarity to every cluster center:\n\n```python\nclass ClusterSimilarity(BaseEstimator, TransformerMixin):\n    def __init__(self, n_clusters=10, gamma=1.0, random_state=None):\n        self.n_clusters = n_clusters\n        self.gamma = gamma\n        self.random_state = random_state\n    def fit(self, X, y=None, sample_weight=None):\n        self.kmeans_ = KMeans(self.n_clusters, random_state=self.random_state)\n        self.kmeans_.fit(X, sample_weight=sample_weight)\n        self.n_features_in_ = X.shape[1]\n        return self  # always return self\n    def transform(self, X):\n        return rbf_kernel(X, self.kmeans_.cluster_centers_, gamma=self.gamma)\n```"
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "How does a Scikit-Learn Pipeline work: what can its steps be, and what happens when you call fit() and predict()?",
+        "a": "Pipeline takes a list of (name, estimator) pairs; names must be unique and must not contain double underscores. Every step but the last must be a transformer (have fit_transform()); the last can be any estimator. make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()) builds one without explicit names, using the lowercased class names, like \"simpleimputer\".\n\nfit() calls fit_transform() on each transformer in turn, feeding each output to the next step, then calls fit() on the final estimator. The pipeline exposes the final estimator's methods: with a predictor last, predict() pushes new data through the already-fitted transformers (transform() only) and then calls the model's predict(); with a transformer last, the pipeline is itself a transformer. You can index it (pipe[1], or pipe[:-1] for a sub-pipeline), look steps up by name (pipe[\"simpleimputer\"]), or use steps and named_steps. Bundling preprocessing with the model means they're cross-validated, tuned, and saved together."
+      },
+      {
+        "key": "a14",
+        "n": 14,
+        "kind": "additional",
+        "q": "What does ColumnTransformer do, and how do you tell it which columns each transformer should handle?",
+        "a": "It applies different transformers to different columns and concatenates their outputs side by side (transformers must never change the number of rows). Its constructor takes (name, transformer, columns) triplets:\n\n```python\npreprocessing = ColumnTransformer([\n    (\"num\", num_pipeline, num_attribs),\n    (\"cat\", cat_pipeline, cat_attribs),\n], remainder=\"drop\")\n```\n\nColumns can be names, indices, or a selector such as make_column_selector(dtype_include=np.number). Instead of a transformer you can pass \"drop\" or \"passthrough\". Unlisted columns are dropped by default; set remainder to a transformer or \"passthrough\" to keep them. make_column_transformer() names the transformers for you, like make_pipeline(). When some outputs are sparse, the result is a sparse matrix only if its overall density (ratio of nonzero cells) is below sparse_threshold, 0.3 by default. get_feature_names_out() prefixes each output column with its transformer's name, as in \"cat__ocean_proximity_INLAND\"."
+      },
+      {
+        "key": "a15",
+        "n": 15,
+        "kind": "additional",
+        "q": "A decision tree scores an RMSE of 0 on its training set. What does that tell you, and how do you evaluate it properly with k-fold cross-validation?",
+        "a": "A perfect training score almost certainly means the model badly overfits, and you shouldn't touch the test set until you're ready to launch. k-fold cross-validation splits the training set into k non-overlapping folds and trains k times, each time evaluating on a different fold after training on the other k \u2212 1:\n\n```python\ntree_rmses = -cross_val_score(tree_reg, housing, housing_labels,\n                              scoring=\"neg_root_mean_squared_error\", cv=10)\n```\n\nScikit-Learn's cross-validation expects a utility function (greater is better), so the scorer returns negative RMSEs and you flip the sign. You get k scores, hence a mean and a standard deviation that tells you how precise the estimate is, which a single validation set can't. Here the tree's mean validation RMSE was about 66,600: zero training error but high validation error confirms overfitting. The price is k training runs."
+      },
+      {
+        "key": "a16",
+        "n": 16,
+        "kind": "additional",
+        "q": "How do you grid-search the hyperparameters of a pipeline that bundles preprocessing and a model, and how do you read the results?",
+        "a": "Say full_pipeline has a \"preprocessing\" step (a ColumnTransformer containing a transformer named \"geo\") followed by a \"random_forest\" step. GridSearchCV takes the pipeline and a param_grid (a dict, or a list of dicts explored one after the other); nested hyperparameters are named by joining names with double underscores, so \"preprocessing__geo__n_clusters\" is the n_clusters of geo inside preprocessing:\n\n```python\nparam_grid = [\n    {\"preprocessing__geo__n_clusters\": [5, 8, 10],\n     \"random_forest__max_features\": [4, 6, 8]},\n    {\"preprocessing__geo__n_clusters\": [10, 15],\n     \"random_forest__max_features\": [6, 8, 10]},\n]\ngrid_search = GridSearchCV(full_pipeline, param_grid, cv=3,\n                           scoring=\"neg_root_mean_squared_error\")\ngrid_search.fit(housing, housing_labels)\n```\n\nThat's (3\u00d73 + 2\u00d73) = 15 combinations \u00d7 3 folds = 45 training runs. Tuning preprocessing together with the model matters because their hyperparameters often interact. Afterwards, best_params_ holds the winning combination, best_estimator_ the best pipeline retrained on the full training set (refit=True by default), and cv_results_ every score (wrap it in a DataFrame). If the best value sits at the edge of the grid, search beyond it."
+      },
+      {
+        "key": "a17",
+        "n": 17,
+        "kind": "additional",
+        "q": "When and why is RandomizedSearchCV preferable to GridSearchCV?",
+        "a": "Grid search tries every combination you list. Randomized search evaluates a fixed number of combinations (n_iter), sampling a value for each hyperparameter at every iteration, which pays off in large search spaces:\n- Continuous or finely grained hyperparameters get many distinct values tried (1,000 iterations explore 1,000 values each), not just a few listed ones.\n- A hyperparameter that turns out not to matter costs nothing extra, whereas adding its 10 values to a grid makes the search 10 times longer.\n- You set the budget: with 6 hyperparameters of 10 values each, a grid means a million combinations.\n\nEach hyperparameter gets a list of values or a distribution, e.g., param_distributions={\"random_forest__max_features\": randint(low=2, high=20)} with scipy.stats.randint. HalvingRandomSearchCV and HalvingGridSearchCV go further: they train many candidates with limited resources (by default, a small part of the training set), keep the best, and give the survivors more resources each round."
+      },
+      {
+        "key": "a18",
+        "n": 18,
+        "kind": "additional",
+        "q": "How should you evaluate your final model on the test set, and what must you resist doing afterwards?",
+        "a": "Evaluate once, at the very end: split the test set into predictors and labels, call final_model.predict() (the pipeline reuses the preprocessing fitted on the training set), and compute the RMSE. A point estimate may not be convincing, say if it's barely better than the current model, so also compute a 95% confidence interval, for example by bootstrapping the squared errors:\n\n```python\nfrom scipy import stats\n\ndef rmse(squared_errors):\n    return np.sqrt(np.mean(squared_errors))\n\nsquared_errors = (final_predictions - y_test) ** 2\nboot_result = stats.bootstrap([squared_errors], rmse,\n                              confidence_level=0.95, random_state=42)\nrmse_lower, rmse_upper = boot_result.confidence_interval\n```\n\nAfter heavy hyperparameter tuning, the test score is usually a bit worse than the cross-validation score, because the system ended up tuned to the validation data. Don't tweak hyperparameters to make the test number look better: those gains are unlikely to generalize to new data."
+      },
+      {
+        "key": "a19",
+        "n": 19,
+        "kind": "additional",
+        "q": "How do you save a trained model and serve it in production, and what are the main deployment options?",
+        "a": "Save the whole pipeline, preprocessing included, with joblib.dump(final_model, \"my_california_housing_model.pkl\"), and load it in production with joblib.load(). The file doesn't contain your code, so every custom function and class the pipeline uses (column_ratio, ClusterSimilarity, and so on) must be defined or imported in the production code before loading.\n\nDeployment options:\n- Load the model inside your web application, once at server startup rather than on every request, and call predict().\n- Wrap it in a dedicated web service that the application queries through a REST API: you can upgrade the model without interrupting the app, scale by load-balancing across several instances, and write the app in any language.\n- Use a cloud platform such as Google's Vertex AI: upload the saved model to Google Cloud Storage and create a model version, which gives you a scalable prediction service taking and returning JSON."
+      },
+      {
+        "key": "a20",
+        "n": 20,
+        "kind": "additional",
+        "q": "Once a model is deployed, what does monitoring and maintaining it involve?",
+        "a": "- Monitor live performance and alert on drops: sudden ones from broken infrastructure, and slow decay from data drift, which can go unnoticed for long. Use downstream metrics where possible (e.g., sales of recommended products); otherwise have human raters (experts, crowd workers, even users) label a sample of predictions, especially uncertain ones.\n- Monitor input quality: alert when more inputs are missing a feature, when a feature's mean or standard deviation drifts from the training set's, or when a categorical feature shows new categories. This may catch problems earlier.\n- Automate retraining: collect and label fresh data, retrain and fine-tune on a schedule, and deploy the new model only if it does at least as well as the old one on the updated test set, including on subsets such as rich versus poor districts.\n- Keep backups of every model and dataset version, for quick rollback and comparison."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-ch03-classification",
+    "title": "Chapter 3 \u2014 Classification",
+    "sources": [
+      "textbook/hands_on_ml/ch03-classification/exercises.md",
+      "textbook/hands_on_ml/ch03-classification/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "How do you load MNIST with Scikit-Learn, and what do you get back?",
+        "a": "mnist = fetch_openml(\"mnist_784\", as_frame=False) downloads it from OpenML.org (and caches it). The sklearn.datasets package has fetch_* functions for real datasets, load_* functions for small bundled toy datasets, and make_* functions that generate fake data. Fetched datasets come back as a Bunch, a dictionary whose entries are also attributes (data, target, DESCR). fetch_openml() returns a DataFrame and a Series by default; as_frame=False gives NumPy arrays, which suit images better.\n\nmnist.data has shape (70000, 784): each row is a 28 \u00d7 28 image flattened into pixel intensities from 0 (white) to 255 (black). Gotcha: the labels are strings, so a 5-detector's target is y_train == \"5\", not == 5. The first 60,000 images form the training set, already shuffled, and the last 10,000 the test set. Shuffling keeps cross-validation folds similar and helps algorithms that struggle with many similar instances in a row, but it's a bad idea for time series."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Why can a 5-detector with over 95% cross-validated accuracy still be a poor classifier?",
+        "a": "Only about 10% of MNIST images are 5s, so a DummyClassifier that always predicts the most frequent class (\"not 5\") scores about 91% accuracy without ever detecting a 5. On skewed datasets, where some classes are much more frequent than others, accuracy mostly reflects the class balance rather than how well the model finds the rare class. Compare against such a baseline, and judge the model with metrics focused on the positive class: the confusion matrix, precision and recall, and PR or ROC curves. Accuracy is fine when classes are balanced, as with the ten digits in the multiclass task."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Sketch stratified k-fold cross-validation implemented by hand, and explain the role of each piece.",
+        "a": "When you need more control than cross_val_score() offers, write the loop yourself:\n\n```python\nskfolds = StratifiedKFold(n_splits=3)  # shuffle=True if not already shuffled\nfor train_index, test_index in skfolds.split(X_train, y_train_5):\n    clone_clf = clone(sgd_clf)\n    clone_clf.fit(X_train[train_index], y_train_5[train_index])\n    y_pred = clone_clf.predict(X_train[test_index])\n    n_correct = sum(y_pred == y_train_5[test_index])\n    print(n_correct / len(y_pred))  # accuracy on this fold\n```\n\nStratifiedKFold produces folds that each keep a representative ratio of every class, and its split() method yields index arrays rather than data. clone() (from sklearn.base) creates a fresh, unfitted copy with the same hyperparameters, so each fold trains from scratch and the original estimator stays untouched. Each iteration trains on the other folds, predicts the held-out fold, and prints that fold's accuracy."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "How do you get a confusion matrix without touching the test set, and how do you read a binary one?",
+        "a": "cross_val_predict() performs k-fold cross-validation like cross_val_score(), but returns predictions instead of scores: each training instance is predicted by a model that never saw it during training, so every prediction is clean (out-of-sample). Then call confusion_matrix(y_train_5, y_train_pred).\n\nEach row is an actual class and each column a predicted class:\n- First row, actual negatives (non-5s): true negatives, then false positives (type I errors).\n- Second row, actual positives (5s): false negatives (type II errors), then true positives.\n\nA perfect classifier has nonzero counts only on the main diagonal. The SGD 5-detector's matrix was [[53892, 687], [1891, 3530]]."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Define precision and recall, and explain why you need both.",
+        "a": "precision = TP / (TP + FP): the fraction of positive predictions that are correct.\n\nrecall = TP / (TP + FN): the fraction of actual positives that the classifier detects. It's also called sensitivity or the true positive rate (TPR).\n\nEach is easy to max out on its own: a classifier that makes a single, very confident positive prediction that happens to be right has 100% precision while missing almost every positive, and one that flags everything as positive has 100% recall. The SGD 5-detector's 95% accuracy hid 83.7% precision and 65.1% recall: when it claims an image is a 5 it's right 83.7% of the time, and it finds only 65.1% of the 5s. Compute them with precision_score(y_true, y_pred) and recall_score(y_true, y_pred)."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "What is the F1 score, why is it a harmonic mean, and when is it the wrong metric to optimize?",
+        "a": "F1 = 2 / (1/precision + 1/recall) = 2 \u00d7 precision \u00d7 recall / (precision + recall) = TP / (TP + (FN + FP)/2). A harmonic mean gives much more weight to low values than a regular mean, so F1 is only high when both precision and recall are high, which makes it a convenient single number for comparing classifiers: f1_score(y_true, y_pred).\n\nBut F1 favors classifiers whose precision and recall are similar, and many applications care much more about one of them:\n- Precision first: a classifier that picks videos safe for kids should reject many good videos (low recall) rather than let a few really bad ones through.\n- Recall first: a shoplifter detector with 30% precision is fine if it has 99% recall, since guards can dismiss false alerts; medical diagnosis also favors recall, with follow-up tests ruling out false positives."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Explain the precision/recall trade-off in terms of decision scores and the decision threshold.",
+        "a": "A classifier such as SGDClassifier computes a score for each instance with its decision function (decision_function()) and predicts positive when the score exceeds a threshold (0 for SGDClassifier's predict()). Picture the instances sorted by score: raising the threshold turns some false positives into true negatives, which usually increases precision, but also turns some true positives into false negatives, which decreases recall. Lowering it does the opposite.\n\nRecall can only go down as the threshold rises, so its curve is smooth. Precision usually goes up but can dip: if raising the threshold drops a true positive while a false positive stays above it, precision can fall from 4/5 to 3/4. That's why the precision curve looks bumpier. Neither improves for free, so you choose the threshold that fits your application."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Walk through choosing a decision threshold that achieves 90% precision, in code.",
+        "a": "Get out-of-sample decision scores instead of predictions, compute precision and recall for every threshold, and take the lowest threshold that reaches 90% precision:\n\n```python\ny_scores = cross_val_predict(sgd_clf, X_train, y_train_5, cv=3,\n                             method=\"decision_function\")\nprecisions, recalls, thresholds = precision_recall_curve(y_train_5, y_scores)\nidx = (precisions >= 0.90).argmax()  # index of the first True\nthreshold_90 = thresholds[idx]\ny_train_pred_90 = (y_scores >= threshold_90)\n```\n\nargmax() on a boolean array returns the first index of the maximum, i.e., the first True. precision_recall_curve() appends a final precision of 1 and recall of 0 (an infinite threshold), so precisions and recalls have one more element than thresholds; drop it with [:-1] when plotting them against thresholds. Then check what it costs: here recall fell to about 48%. If someone asks for 99% precision, ask \"at what recall?\""
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "What do FixedThresholdClassifier and TunedThresholdClassifierCV do, and why use them rather than thresholding scores by hand?",
+        "a": "Added in Scikit-Learn 1.5 (in sklearn.model_selection), both wrap a binary classifier so the threshold becomes part of the model: predict() applies it, and the wrapper can be saved, cross-validated, or put in a pipeline like any other classifier, with no custom thresholding code around it.\n- FixedThresholdClassifier lets you set the threshold yourself, e.g., FixedThresholdClassifier(sgd_clf, threshold=3370.0). If the wrapped classifier has predict_proba(), the threshold is a probability between 0 and 1 (default 0.5); otherwise it's a decision score comparable to decision_function() outputs (default 0).\n- TunedThresholdClassifierCV uses k-fold cross-validation to find the threshold that optimizes a metric, by default balanced accuracy (the average of each class's recall). Set scoring to optimize another metric, and read the chosen value from best_threshold_."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "What does a ROC curve plot, and how do you compute it and summarize it with a single number?",
+        "a": "It plots the true positive rate (recall, or sensitivity) against the false positive rate for every possible threshold. FPR = FP / (FP + TN) is the fraction of negatives wrongly flagged as positive (the fall-out); it equals 1 \u2212 specificity, where specificity, the true negative rate, is TN / (TN + FP). So a ROC curve is sensitivity versus 1 \u2212 specificity.\n\nfpr, tpr, thresholds = roc_curve(y_train_5, y_scores) computes the points (thresholds in decreasing order). It's a trade-off again: the higher the recall, the more false positives. A purely random classifier traces the diagonal; a good one stays as far from it as possible, toward the top-left corner. The area under the curve (AUC) summarizes it: roc_auc_score(y_train_5, y_scores) is 1 for a perfect classifier and 0.5 for a random one."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "When should you prefer the precision/recall curve over the ROC curve, and why?",
+        "a": "Rule of thumb: use the PR curve when the positive class is rare or when you care more about false positives than false negatives; otherwise use the ROC curve.\n\nThe reason is the denominators. The FPR divides false positives by the number of actual negatives, so when negatives vastly outnumber positives, even many false positives barely move it, and the ROC curve and its AUC look excellent. Precision divides by the number of positive predictions, so those same false positives show up clearly. For the 5-detector (only about 10% positives), the SGD model's ROC AUC of 0.96 looked great, while its PR curve showed plenty of room for improvement: it could get much closer to the top-right corner."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "How do you get scores for PR and ROC curves from a classifier with no decision_function(), such as RandomForestClassifier?",
+        "a": "Scikit-Learn classifiers always have decision_function() or predict_proba(), sometimes both. predict_proba() returns one column per class (in the order of classes_), each row summing to 1, and the positive class's column works as a score:\n\n```python\ny_probas_forest = cross_val_predict(forest_clf, X_train, y_train_5, cv=3,\n                                    method=\"predict_proba\")\ny_scores_forest = y_probas_forest[:, 1]  # estimated probability of a 5\nprecisions_forest, recalls_forest, thresholds_forest = precision_recall_curve(\n    y_train_5, y_scores_forest)\n```\n\nThe thresholds are now probabilities, so for instance y_scores_forest >= 0.5 predicts positive whenever the estimated probability is at least 50%. The random forest clearly beat the SGD classifier: its PR curve came much closer to the top-right corner, with an F1 score of about 0.93 and a ROC AUC of about 0.998."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "Are the outputs of predict_proba() real probabilities, and what can you do if they aren't?",
+        "a": "They're estimates and can be miscalibrated. Among the images the random forest gave a 50\u201360% probability of being a 5, about 94% actually were 5s, so those estimates were far too low; other models are overconfident instead. Well calibrated means that among the instances given a probability p of being positive, about a fraction p really are. CalibratedClassifierCV (in sklearn.calibration) wraps a classifier and uses cross-validation to calibrate its estimated probabilities, bringing them much closer to actual probabilities. That matters when decisions rely on the probability values themselves rather than just the ranking or the predicted class, as in medical diagnosis, financial risk assessment, or fraud detection."
+      },
+      {
+        "key": "a14",
+        "n": 14,
+        "kind": "additional",
+        "q": "Compare the one-versus-the-rest and one-versus-one strategies for multiclass classification with binary classifiers.",
+        "a": "- One-versus-the-rest (OvR, also one-versus-all): train one binary classifier per class (a 0-detector, a 1-detector, and so on), N in total, and predict the class whose classifier outputs the highest decision score.\n- One-versus-one (OvO): train one classifier per pair of classes, N \u00d7 (N \u2212 1) / 2 in total (45 for the 10 digits), run the instance through all of them, and predict the class that wins the most duels.\n\nOvO trains many more classifiers, but each one only on the instances of its two classes. That suits algorithms that scale poorly with the size of the training set, such as support vector machines, because training many classifiers on small sets is faster than training a few on large ones. For most binary classifiers, OvR is preferred. Classifiers such as LogisticRegression, RandomForestClassifier, and GaussianNB handle multiple classes natively and need neither."
+      },
+      {
+        "key": "a15",
+        "n": 15,
+        "kind": "additional",
+        "q": "What happens when you fit a binary-only classifier such as SVC or SGDClassifier on a 10-class target, and how do you inspect or override the strategy?",
+        "a": "Scikit-Learn detects the multiclass target and applies OvR or OvO automatically: SVC uses OvO (45 binary classifiers for the digits), SGDClassifier uses OvR (10). decision_function() then returns one score per class for each instance; for SVC, a class's score is its number of won duels plus a small tie-breaking adjustment based on the classifiers' scores. Map the best column back to a label through classes_, which lists the classes sorted by value (index and label only coincide by luck, as with digits):\n\n```python\nscores = svm_clf.decision_function([some_digit])  # shape (1, 10)\nsvm_clf.classes_[scores.argmax()]  # '5'\n```\n\nTo force a strategy, wrap any classifier in OneVsRestClassifier or OneVsOneClassifier from sklearn.multiclass, e.g., OneVsRestClassifier(SVC(random_state=42)); after fitting, its estimators_ attribute holds the underlying binary classifiers (10 for OvR on the digits)."
+      },
+      {
+        "key": "a16",
+        "n": 16,
+        "kind": "additional",
+        "q": "How do you use a confusion matrix plot for multiclass error analysis, and what do its normalization options reveal?",
+        "a": "Get clean predictions with cross_val_predict(), then call ConfusionMatrixDisplay.from_predictions(y_train, y_train_pred):\n- normalize=\"true\" divides each row by the number of instances of that actual class, so cells show fractions of each class; raw counts would confuse \"more errors\" with \"fewer instances\". values_format=\".0%\" displays percentages.\n- sample_weight=(y_train_pred != y_train) gives correct predictions zero weight, so only errors show. With normalize=\"true\", a cell is then the share of that class's errors going to each predicted class; normalize=\"pred\" normalizes by column instead, showing which actual classes each class's wrong predictions came from.\n\nConfusion matrices are usually asymmetric: 10% of 5s were predicted as 8s, but only 2% of 8s as 5s. Many digits were wrongly predicted as 8s, which suggests gathering more images that look like 8s but aren't, engineering features such as the number of closed loops, or preprocessing images to make such patterns stand out."
+      },
+      {
+        "key": "a17",
+        "n": 17,
+        "kind": "additional",
+        "q": "Why does the SGD classifier confuse 3s and 5s, and what are two ways to reduce that confusion?",
+        "a": "SGDClassifier is a linear model: it assigns a weight per class to each pixel and scores an image by summing its weighted pixel intensities. 3s and 5s differ by only a few pixels, mainly the position of the small stroke that joins the top line to the bottom arc, so a slightly shifted or rotated digit can tip the scores toward the other class. The model is quite sensitive to image shifts and rotations.\n\nTwo remedies:\n- Preprocess the images so they're well centered and not too rotated, which is hard because you must estimate each image's rotation.\n- Data augmentation: add slightly shifted and rotated copies of the training images, forcing the model to tolerate such variations. It's much simpler."
+      },
+      {
+        "key": "a18",
+        "n": 18,
+        "kind": "additional",
+        "q": "Show how to train and evaluate a multilabel classifier in Scikit-Learn.",
+        "a": "Build a 2D target with one column per binary label, and use a classifier that supports multilabel classification natively (not all do), such as KNeighborsClassifier:\n\n```python\ny_train_large = (y_train >= \"7\")\ny_train_odd = (y_train.astype(\"int8\") % 2 == 1)\ny_multilabel = np.c_[y_train_large, y_train_odd]\nknn_clf = KNeighborsClassifier()\nknn_clf.fit(X_train, y_multilabel)\nknn_clf.predict([some_digit])  # array([[False, True]]): not large, odd\n```\n\nThe right metric depends on the project. A common approach computes a binary metric for each label and averages it: f1_score(y_multilabel, y_train_knn_pred, average=\"macro\"), with predictions from cross_val_predict(), treats all labels as equally important, while average=\"weighted\" weights each label by its support (the number of instances that have it), useful when, say, Alice appears in far more photos than Bob."
+      },
+      {
+        "key": "a19",
+        "n": 19,
+        "kind": "additional",
+        "q": "What problem does ClassifierChain solve for multilabel classification, and what does its cv argument change?",
+        "a": "With a classifier that can't handle multilabel targets natively, like SVC, you can train one model per label, but independent models can't exploit dependencies between labels: a large digit (7, 8, or 9) is twice as likely to be odd as even, yet the \"odd\" model never sees what the \"large\" model predicted. ClassifierChain (in sklearn.multioutput) links the models: each one receives the input features plus the predictions of every model earlier in the chain.\n\nBy default, each model is trained using the true labels of the earlier positions. With cv set, e.g., ClassifierChain(SVC(), cv=3, random_state=42), it instead uses cross-validation to get clean, out-of-sample predictions from each trained model and trains the later models on those, which better matches what they'll receive at prediction time. The order of the chain can affect performance."
+      },
+      {
+        "key": "a20",
+        "n": 20,
+        "kind": "additional",
+        "q": "Distinguish binary, multiclass, multilabel, and multioutput classification, with an example of each.",
+        "a": "- Binary: two classes, like 5 versus not-5.\n- Multiclass (multinomial): one label with more than two possible classes, like which digit from 0 to 9.\n- Multilabel: several binary labels per instance, like a face tagger that outputs [True, False, True] for \"Alice yes, Bob no, Charlie yes\".\n- Multioutput (multioutput\u2013multiclass): several labels per instance, each of which can take more than two values. Example: a denoiser that takes a noisy digit image and outputs the clean image, one label per pixel with intensities from 0 to 255; a KNeighborsClassifier trained with noisy images as inputs and the originals as targets can do it.\n\nThe line between classification and regression blurs here: predicting pixel intensities is arguably closer to regression, and a multioutput system can even mix class labels and numeric labels for the same instance."
       }
     ]
   },
@@ -146,7 +454,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch04-training-models",
     "title": "Chapter 4 \u2014 Training Models",
     "sources": [
-      "textbook/hands_on_ml/ch04-training-models/exercises.md"
+      "textbook/hands_on_ml/ch04-training-models/exercises.md",
+      "textbook/hands_on_ml/ch04-training-models/additional_exercises.md"
     ],
     "cards": [
       {
@@ -225,6 +534,69 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Suppose you want to classify pictures as outdoor/indoor and daytime/nighttime. Should you implement two logistic regression classifiers or one softmax regression classifier?",
         "a": "If you want to classify pictures as outdoor/indoor and daytime/nighttime, since these are not exclusive classes (i.e., all four combinations are possible) you should train two Logistic Regression classifiers."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "State the normal equation for linear regression, and explain why Scikit-Learn's LinearRegression computes a pseudoinverse instead of solving it directly.",
+        "a": "\u03b8\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y gives, in closed form, the parameter vector that minimizes the MSE. X is the m \u00d7 (n + 1) matrix of training instances with an extra column of 1s for the bias term, and y is the vector of targets. In NumPy, with X_b = add_dummy_feature(X): np.linalg.inv(X_b.T @ X_b) @ X_b.T @ y.\n\nLinearRegression is based on scipy.linalg.lstsq(), which computes \u03b8\u0302 = X\u207ay, where X\u207a is the Moore\u2013Penrose pseudoinverse (np.linalg.pinv() computes it directly). X\u207a comes from the singular value decomposition X = U\u03a3V\u1d40: X\u207a = V\u03a3\u207aU\u1d40, where \u03a3\u207a is \u03a3 with values below a tiny threshold set to zero, the others inverted, and the result transposed. This is more efficient, and X\u207a is always defined, whereas X\u1d40X can't be inverted when m < n or some features are redundant. After fitting, the bias is in intercept_ and the feature weights are in coef_."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Give the gradient of the MSE cost for linear regression in vectorized form, and sketch batch gradient descent in NumPy.",
+        "a": "\u2207\u03b8MSE(\u03b8) = (2/m)\u00b7X\u1d40(X\u03b8 \u2212 y): for each parameter \u03b8\u2c7c, the prediction errors multiplied by feature j, averaged over all m instances and doubled (X includes the bias column of 1s). The gradient points uphill, so each step goes the opposite way: \u03b8 \u2190 \u03b8 \u2212 \u03b7\u00b7\u2207\u03b8MSE(\u03b8), where \u03b7 is the learning rate.\n\n```python\neta, n_epochs = 0.1, 1000\nm = len(X_b)                          # X_b = X plus a bias column of 1s\nrng = np.random.default_rng(seed=42)\ntheta = rng.standard_normal((2, 1))   # random init: bias + 1 weight\nfor epoch in range(n_epochs):\n    gradients = 2 / m * X_b.T @ (X_b @ theta - y)\n    theta = theta - eta * gradients\n```\n\nIt's called batch GD because every step uses the whole training set. Rather than guessing n_epochs, you can set it very high and stop as soon as the gradient vector's norm drops below a small tolerance \u03b5, which means you're essentially at the minimum."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How does polynomial regression let a linear model fit nonlinear data, and what exactly does PolynomialFeatures add?",
+        "a": "It's plain linear regression trained on an expanded feature set, so the model stays linear in its parameters but becomes nonlinear in the original inputs. PolynomialFeatures(degree=d) adds the powers of each feature and all products of features up to degree d: with features a and b and degree=3, it adds a\u00b2, ab, b\u00b2, a\u00b3, a\u00b2b, ab\u00b2 and b\u00b3. Those cross terms let the model capture interactions between features, which plain linear regression can't. Set include_bias=False when the next estimator fits its own intercept; otherwise it also adds a column of 1s. Beware the growth: n features become (n + d)! / (d!\u00b7n!) columns (counting that bias column), so high degrees explode in size and overfit easily.\n\n```python\npoly_reg = make_pipeline(PolynomialFeatures(degree=2, include_bias=False),\n                         LinearRegression())\n```"
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What are the three components of a model's generalization error in the bias/variance trade-off, and how does model complexity affect them?",
+        "a": "- Bias: error from wrong assumptions, such as assuming the data is linear when it's actually quadratic. A high-bias model is likely to underfit.\n- Variance: error from the model being overly sensitive to small variations in the training data, typical of models with many degrees of freedom such as a high-degree polynomial. A high-variance model is likely to overfit.\n- Irreducible error: the noise in the data itself. Only cleaning up the data (fixing broken sensors, removing outliers) reduces it.\n\nMaking a model more complex usually lowers its bias but raises its variance; simplifying it or regularizing it more does the reverse. Hence the trade-off: you're looking for the complexity where the total error is lowest. (This bias has nothing to do with a linear model's bias term.)"
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Write the ridge and lasso cost functions, and explain why lasso drives some weights exactly to zero while ridge only shrinks them.",
+        "a": "- Ridge: J(\u03b8) = MSE(\u03b8) + (\u03b1/m)\u00b7\u2211\u03b8\u1d62\u00b2\n- Lasso: J(\u03b8) = MSE(\u03b8) + 2\u03b1\u00b7\u2211|\u03b8\u1d62|\n\nBoth sums run from i = 1 to n, so the bias term \u03b8\u2080 isn't penalized, and \u03b1 sets the strength. The penalty is only used during training; evaluate the model with the unregularized error.\n\nThe difference lies in the penalty's gradient. Ridge adds 2\u03b1\u03b8\u1d62/m, which fades as a weight approaches zero, so weights get small but rarely reach it. Lasso pushes every nonzero weight toward zero with the same force, 2\u03b1\u00b7sign(\u03b8\u1d62), however small the weight already is, so the weights of features that barely help reduce the MSE get driven all the way to 0. The result is automatic feature selection and a sparse model. Since the lasso cost isn't differentiable at 0, gradient descent uses a subgradient there, and it keeps bouncing around the optimum unless the learning rate is gradually reduced."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "How do you set the regularization strength in Scikit-Learn's Ridge, Lasso, ElasticNet, SGDRegressor and LogisticRegression, and what are the gotchas?",
+        "a": "- Ridge(alpha=...) and Lasso(alpha=...): a higher alpha means stronger regularization. Ridge can also use a closed-form solver, e.g., solver=\"cholesky\".\n- ElasticNet(alpha=..., l1_ratio=...): l1_ratio is the mix ratio r between the two penalties, 0 for pure ridge and 1 for pure lasso.\n- SGDRegressor(penalty=\"l2\", alpha=...): its \u21132 term isn't divided by m, so matching Ridge(alpha=0.1) takes alpha=0.1 / m. penalty=\"l1\" with the same alpha as Lasso gives lasso, and penalty=None turns regularization off.\n- LogisticRegression(C=...): C is the inverse of the regularization strength, so a higher C means less regularization. It applies an \u21132 penalty by default.\n\nScale the features first (e.g., with StandardScaler), since these penalties are sensitive to feature scales, and use RidgeCV, LassoCV or ElasticNetCV to tune alpha quickly with built-in cross-validation."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Sketch a basic early-stopping loop around an SGDRegressor, and explain why it uses partial_fit() and copy.deepcopy().",
+        "a": "Train one epoch at a time, measure the validation RMSE, and keep a copy of the best model seen so far (the inputs here are already expanded and scaled):\n\n```python\nfrom copy import deepcopy\nfrom sklearn.metrics import root_mean_squared_error\n\nsgd_reg = SGDRegressor(penalty=None, eta0=0.002, random_state=42)\nbest_valid_rmse = float(\"inf\")\nfor epoch in range(500):\n    sgd_reg.partial_fit(X_train_prep, y_train)\n    val_error = root_mean_squared_error(y_valid, sgd_reg.predict(X_valid_prep))\n    if val_error < best_valid_rmse:\n        best_valid_rmse = val_error\n        best_model = deepcopy(sgd_reg)\n```\n\npartial_fit() runs a single round of training and continues where the previous call left off, whereas fit() would restart training and reset the learning schedule's iteration counter. deepcopy() copies the learned parameters as well as the hyperparameters; sklearn.base.clone() copies only the hyperparameters, giving an untrained model. This loop never actually stops early: it trains for all epochs and lets you roll back to best_model afterward."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Walk through logistic regression: how it estimates a probability, how it turns that into a class, and what cost function trains it.",
+        "a": "It computes a linear score t = \u03b8\u1d40x, called the logit, and passes it through the logistic (sigmoid) function \u03c3(t) = 1 / (1 + exp(\u2212t)), so p\u0302 = \u03c3(\u03b8\u1d40x) lies between 0 and 1. With the default 50% threshold, it predicts the positive class exactly when \u03b8\u1d40x \u2265 0, so the decision boundary is linear. The logit is also called the log-odds, since t = log(p\u0302 / (1 \u2212 p\u0302)).\n\nTraining minimizes the log loss over the m training instances: J(\u03b8) = \u2212(1/m)\u00b7\u2211[y\u00b7log(p\u0302) + (1 \u2212 y)\u00b7log(1 \u2212 p\u0302)]. A positive instance costs \u2212log(p\u0302) and a negative one \u2212log(1 \u2212 p\u0302); both blow up as the prediction becomes confidently wrong, while confidently right predictions cost almost nothing. There's no closed-form solution, so it's trained iteratively, e.g., by gradient descent with \u2207\u03b8J(\u03b8) = (1/m)\u00b7X\u1d40(\u03c3(X\u03b8) \u2212 y): the same shape as the MSE gradient, prediction errors times inputs."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "How does softmax regression compute class probabilities, and what cost function and gradient are used to train it?",
+        "a": "Each class k has its own parameter vector \u03b8\u207d\u1d4f\u207e (stored as the rows of a matrix \u0398) and gets a score s\u2096(x) = \u03b8\u207d\u1d4f\u207e\u1d40x. The softmax function exponentiates the scores and normalizes them, p\u0302\u2096 = exp(s\u2096(x)) / \u2211\u2c7c exp(s\u2c7c(x)), so the probabilities are positive and sum to 1. The prediction is the argmax, which is simply the class with the highest score.\n\nTraining minimizes the cross entropy J(\u0398) = \u2212(1/m)\u00b7\u2211\u1d62\u2211\u2096 y\u2096\u207d\u2071\u207e\u00b7log(p\u0302\u2096\u207d\u2071\u207e), where y\u2096\u207d\u2071\u207e is 1 if instance i belongs to class k and 0 otherwise, so it penalizes a low probability for the target class. With two classes it reduces to the log loss. The gradient for class k is \u2207\u03b8\u207d\u1d4f\u207eJ(\u0398) = (1/m)\u00b7\u2211\u1d62(p\u0302\u2096\u207d\u2071\u207e \u2212 y\u2096\u207d\u2071\u207e)\u00b7x\u207d\u2071\u207e. Scikit-Learn's LogisticRegression uses softmax regression automatically when trained on more than two classes (with its default lbfgs solver)."
       }
     ]
   },
@@ -232,7 +604,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch05-decision-trees",
     "title": "Chapter 5 \u2014 Decision Trees",
     "sources": [
-      "textbook/hands_on_ml/ch05-decision-trees/exercises.md"
+      "textbook/hands_on_ml/ch05-decision-trees/exercises.md",
+      "textbook/hands_on_ml/ch05-decision-trees/additional_exercises.md"
     ],
     "cards": [
       {
@@ -276,6 +649,104 @@ window.DECKS = [
         "kind": "exercise",
         "q": "If it takes one hour to train a decision tree on a given training set, roughly how much time will it take if you double the number of features?",
         "a": "If the number of features doubles, then the training time will also roughly double."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Sketch how to train a DecisionTreeClassifier on two iris features and export the fitted tree for Graphviz.",
+        "a": "```python\nfrom sklearn.datasets import load_iris\nfrom sklearn.tree import DecisionTreeClassifier, export_graphviz\n\niris = load_iris(as_frame=True)\nfeatures = [\"petal length (cm)\", \"petal width (cm)\"]\nX_iris, y_iris = iris.data[features].values, iris.target\ntree_clf = DecisionTreeClassifier(max_depth=2, random_state=42)\ntree_clf.fit(X_iris, y_iris)\nexport_graphviz(tree_clf, out_file=\"iris_tree.dot\", feature_names=features,\n                class_names=iris.target_names, rounded=True, filled=True)\n```\n\nIn a Jupyter notebook, graphviz.Source.from_file(\"iris_tree.dot\") displays the tree, and Graphviz's dot command-line tool converts .dot files to formats such as PNG or PDF. The fitted structure is also available programmatically through tree_clf.tree_. Both DecisionTreeClassifier and DecisionTreeRegressor handle missing values natively, so no imputer is needed."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How does a trained decision tree classify a new instance, and what do the samples, value and gini fields shown in each node mean?",
+        "a": "Start at the root node and answer its yes/no question about one feature (e.g., is petal length \u2264 2.45 cm?). Go to the left child if the answer is yes and the right child if it's no, and repeat until you reach a leaf, which predicts the most common class among its training instances. In the rendered tree:\n- samples: how many training instances reach that node.\n- value: how many of those training instances belong to each class.\n- gini: the node's Gini impurity, which is 0 when all of them belong to the same class (a pure node).\n\nScikit-Learn's CART algorithm only builds binary trees, where every split node has exactly two children; other algorithms, such as ID3, can create nodes with more."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Define the Gini impurity of a node, and compute it for a node whose 54 training instances split 0, 49 and 5 across three classes.",
+        "a": "G = 1 \u2212 \u2211\u2096 p\u2096\u00b2, where p\u2096 is the fraction of the node's training instances that belong to class k. It's 0 for a pure node and grows as more classes are present in more even proportions (the maximum with K classes is 1 \u2212 1/K). One way to read it: the probability that two instances drawn at random (with replacement) from the node belong to different classes.\n\nFor this node: G = 1 \u2212 (0/54)\u00b2 \u2212 (49/54)\u00b2 \u2212 (5/54)\u00b2 \u2248 1 \u2212 0.823 \u2212 0.009 \u2248 0.168."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What distinguishes a white box model from a black box model, and why does the distinction matter?",
+        "a": "A white box model's decisions are easy to interpret: a decision tree boils down to simple if/then rules that you can follow, or even apply by hand, to see exactly why an instance got its prediction. Black box models such as random forests and neural networks often predict better, and you can check every calculation they perform, yet it's hard to explain in simple terms why they made a given prediction (which part of a photo made a network recognize someone?). Interpretability matters whenever people must review or justify decisions: a doctor checking a diagnosis, analysts assessing financial risk, a judge making the final call, or HR making sure decisions aren't biased. Interpretable ML is the field that aims to build systems able to explain their decisions to humans."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How does a decision tree estimate class probabilities, and what's a weakness of those estimates?",
+        "a": "It routes the instance down to its leaf and returns the fraction of that leaf's training instances that belong to each class. For a leaf holding 0, 49 and 5 training instances of three classes, predict_proba() returns about [0, 0.907, 0.093], and predict() returns the most probable class. The weakness is that the estimate is constant over the leaf's entire region of feature space: an instance near the far edge of that region, even one that plainly resembles another class, gets exactly the same probabilities as one in the middle. The probabilities are coarse, piecewise-constant values set by the leaf counts rather than a smooth function of the inputs."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Walk through how the CART algorithm grows a classification tree, including the cost function it minimizes at each split.",
+        "a": "1. At the current node, consider each feature k and candidate threshold t\u2096 (e.g., petal length \u2264 2.45 cm).\n2. Pick the pair that minimizes the size-weighted impurity of the two resulting subsets: J(k, t\u2096) = (m_left/m)\u00b7G_left + (m_right/m)\u00b7G_right, where G_left and G_right are the subsets' impurities and m_left and m_right their numbers of instances.\n3. Split the node's instances accordingly, then apply the same procedure recursively to each subset.\n4. Stop at max_depth, when no split reduces impurity, or when another limit such as min_samples_split, min_samples_leaf or max_leaf_nodes applies.\n\nCART is greedy: each split is the best one available at that moment, with no check on whether another split would lead to purer nodes a few levels down. Finding the optimal tree is NP-complete (O(exp(m)) time), intractable even for small training sets, so we settle for a reasonably good greedy tree."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "What's the computational cost of making a prediction with a trained decision tree, and why doesn't it depend on the number of features?",
+        "a": "A prediction just follows one path from the root to a leaf. Trees end up roughly balanced, so that path goes through about log\u2082(m) nodes, where m is the number of training instances: O(log\u2082(m)). Each node on the path checks the value of a single feature against a threshold, so the cost doesn't grow with the total number of features n. That's why trees predict very quickly even when trained on large datasets; the expensive part is training, which by default compares all features on all samples at every node."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How is entropy used as a node's impurity measure, and how do you choose between it and Gini impurity?",
+        "a": "A node's entropy is H = \u2212\u2211\u2096 p\u2096\u00b7log\u2082(p\u2096), summed over the classes present in the node (p\u2096 \u2260 0), where p\u2096 is the fraction of the node's instances in class k. Like Gini impurity, it's 0 for a pure node and largest when the classes are evenly mixed. For a node holding 0, 49 and 5 instances of three classes: H = \u2212(49/54)\u00b7log\u2082(49/54) \u2212 (5/54)\u00b7log\u2082(5/54) \u2248 0.445. Select it with DecisionTreeClassifier(criterion=\"entropy\"); Gini is the default. Most of the time the choice barely matters, as both lead to similar trees. Gini is slightly faster to compute, which makes it a good default; when they do differ, Gini tends to isolate the most frequent class in its own branch, while entropy tends to produce slightly more balanced trees."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "What makes a decision tree a nonparametric model, and why does that make it prone to overfitting?",
+        "a": "Nonparametric doesn't mean it has no parameters (a tree often has many); it means their number isn't fixed before training, so the model's structure is free to adapt to the training data as closely as it likes. A parametric model such as linear regression has a predetermined number of parameters, which limits its degrees of freedom: less risk of overfitting, more risk of underfitting. Decision trees also make very few assumptions about the data, and left unconstrained, CART keeps splitting until it can no longer reduce impurity, usually leaving pure leaves. So an unrestricted tree will most likely overfit unless you limit its freedom during training (regularization)."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Name DecisionTreeClassifier's main regularization hyperparameters, and state the general rule for using them.",
+        "a": "- max_depth: maximum depth of the tree (default None, meaning unlimited).\n- max_leaf_nodes: maximum number of leaf nodes.\n- max_features: maximum number of features evaluated for splitting at each node.\n- min_samples_split: minimum number of samples a node must have before it can be split.\n- min_samples_leaf: minimum number of samples a leaf node must have.\n- min_weight_fraction_leaf: like min_samples_leaf, but as a fraction of the total number of weighted instances.\n- min_impurity_decrease: only split a node if the split reduces impurity by at least this amount.\n- ccp_alpha: strength of minimal cost-complexity pruning (default 0, no pruning).\n\nTo regularize, increase the min-prefixed hyperparameters or ccp_alpha, or decrease the max-prefixed ones. max_depth is a good default, since it also keeps the tree small and readable; min_samples_leaf helps especially on small datasets, and max_features on high-dimensional ones."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "What does it mean to prune a decision tree, and how does pruning differ from restricting the tree's growth?",
+        "a": "Hyperparameters like max_depth or min_samples_leaf stop the tree from growing in the first place. Pruning instead trains the tree without restrictions, then deletes unnecessary nodes. In the classic statistical approach, a node whose children are all leaves is checked with a test such as the \u03c7\u00b2 test, which estimates the probability (the p-value) that its purity improvement is purely due to chance. If that p-value exceeds a threshold, typically 5%, the node is considered unnecessary and its children are deleted; this repeats until no unnecessary nodes remain. Scikit-Learn's pruning option is minimal cost-complexity pruning, set with ccp_alpha: it prunes subtrees whose impurity reduction isn't worth their number of leaves, and a larger ccp_alpha prunes more, giving a smaller tree."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "How does a regression tree make predictions, and what does CART minimize when growing one?",
+        "a": "It's traversed exactly like a classification tree, but each leaf predicts a value: the average target of the training instances that reach that leaf. The model is therefore piecewise constant, with one flat prediction per region. To grow it, CART chooses the feature k and threshold t\u2096 that minimize the size-weighted MSE of the two subsets, J(k, t\u2096) = (m_left/m)\u00b7MSE_left + (m_right/m)\u00b7MSE_right, where each subset's MSE is measured around that subset's own mean target. So each split makes the training instances in each region as close as possible to the region's prediction. Regression trees overfit just as easily as classification trees: with default hyperparameters they chase every noisy point, while simply setting min_samples_leaf=10 gives a much more reasonable model."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "Why are decision trees sensitive to the orientation of the data, and how can you reduce the problem?",
+        "a": "Every split compares a single feature with a threshold, so all decision boundaries are perpendicular to an axis. A class boundary that runs diagonally to the axes has to be approximated by a staircase of splits: a linearly separable dataset rotated by 45\u00b0 gets a needlessly convoluted boundary that probably won't generalize, even if it fits the training set perfectly. One remedy is to scale the data and then rotate it with PCA, which reduces the correlation between features and often (not always) lets the tree separate the classes with fewer splits:\n\n```python\nfrom sklearn.decomposition import PCA\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\n\npca_pipeline = make_pipeline(StandardScaler(), PCA())\nX_iris_rotated = pca_pipeline.fit_transform(X_iris)\ntree_clf_pca = DecisionTreeClassifier(max_depth=2, random_state=42)\ntree_clf_pca.fit(X_iris_rotated, y_iris)\n```"
+      },
+      {
+        "key": "a14",
+        "n": 14,
+        "kind": "additional",
+        "q": "Why do decision trees have high variance, and what's the usual remedy?",
+        "a": "Small changes to the training data or to the hyperparameters can produce a very different tree: a slightly different split near the root changes everything grown beneath it. Scikit-Learn's training algorithm is also stochastic: at each node it goes through the features in a random order (or evaluates a random subset of them, if max_features is set), which can decide between equally good splits. So even retraining the same tree on exactly the same data can give a very different model unless you set random_state. The remedy is to average the predictions of many trees, which reduces variance significantly; such an ensemble of decision trees is called a random forest."
       }
     ]
   },
@@ -283,7 +754,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch06-ensemble-learning-and-random-forests",
     "title": "Chapter 6 \u2014 Ensemble Learning and Random Forests",
     "sources": [
-      "textbook/hands_on_ml/ch06-ensemble-learning-and-random-forests/exercises.md"
+      "textbook/hands_on_ml/ch06-ensemble-learning-and-random-forests/exercises.md",
+      "textbook/hands_on_ml/ch06-ensemble-learning-and-random-forests/additional_exercises.md"
     ],
     "cards": [
       {
@@ -334,6 +806,97 @@ window.DECKS = [
         "kind": "exercise",
         "q": "If your gradient boosting ensemble overfits the training set, should you increase or decrease the learning rate?",
         "a": "If your Gradient Boosting ensemble overfits the training set, you should try decreasing the learning rate. You could also use early stopping to find the right number of predictors (you probably have too many)."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Why can an ensemble of weak learners be much more accurate than any of its members, and what condition does that depend on?",
+        "a": "Picture a coin that lands heads 51% of the time: over 1,000 tosses, the probability of getting a majority of heads is about 75%, and it keeps climbing with more tosses, thanks to the law of large numbers. Likewise, 1,000 classifiers that are each right only 51% of the time could reach up to about 75% accuracy by majority vote, but only if their errors are independent. In practice they're trained on the same data, so they tend to make the same kinds of mistakes, many votes go to the same wrong class, and the gain shrinks. So an ensemble works best when its members are as diverse as possible: trained with very different algorithms, with different hyperparameters, or on different subsets of the data."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Sketch how to build a VotingClassifier in Scikit-Learn, inspect its members, and switch it to soft voting.",
+        "a": "Pass a list of (name, estimator) pairs and use it like any classifier; fit() clones each estimator and trains the clones:\n\n```python\nvoting_clf = VotingClassifier(estimators=[\n    (\"lr\", LogisticRegression(random_state=42)),\n    (\"rf\", RandomForestClassifier(random_state=42)),\n    (\"svc\", SVC(random_state=42))])\nvoting_clf.fit(X_train, y_train)\nfor name, clf in voting_clf.named_estimators_.items():\n    print(name, clf.score(X_test, y_test))\n```\n\nestimators (a list) and named_estimators (a dict) hold the original, unfitted models; estimators_ and named_estimators_ hold the fitted clones. predict() uses hard voting by default. To switch to soft voting, set voting=\"soft\", make sure every member has a predict_proba() method (e.g., set probability=True on the SVC), and call fit() again."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Why does bagging mostly reduce variance, and which kinds of base models benefit most from it?",
+        "a": "Bagging trains many copies of one algorithm on random samples of the training set drawn with replacement (pasting samples without replacement), then aggregates their predictions: the most frequent class for classification, the average for regression. Each predictor is a bit more biased than one trained on the full set, but their errors are partly independent, so averaging cancels much of the scatter: the average of two independent predictions with equal variance has half that variance. In practice, the ensemble ends up with about the same bias as a single predictor trained on the full set, but a lower variance. So it helps most with low-bias, high-variance models such as deep decision trees, and little with stable, high-bias ones like linear regression. Bagging's resampling adds diversity, making its predictors less correlated than pasting's; that's why it's usually preferred, especially for noisy data or overfitting-prone models."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Sketch a bagging ensemble of decision trees with Scikit-Learn, and explain its key hyperparameters.",
+        "a": "```python\nfrom sklearn.ensemble import BaggingClassifier\nfrom sklearn.tree import DecisionTreeClassifier\n\nbag_clf = BaggingClassifier(DecisionTreeClassifier(), n_estimators=500,\n                            max_samples=100, n_jobs=-1, random_state=42)\nbag_clf.fit(X_train, y_train)\n```\n\n- n_estimators: the number of predictors.\n- max_samples: how many instances are drawn for each predictor, as a count or as a fraction of the training set (by default, as many as the training set has).\n- bootstrap: True (the default) samples with replacement, which is bagging; False gives pasting.\n- n_jobs: the number of CPU cores used for training and predictions; -1 means all of them.\n- oob_score=True: evaluates the ensemble on out-of-bag instances after training; the score lands in oob_score_, and each training instance's OOB class probabilities in oob_decision_function_.\n\nIf the base estimator has a predict_proba() method, as decision trees do, the ensemble automatically uses soft voting. BaggingRegressor is the regression counterpart."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Why does each predictor in a bagging ensemble see only about 63% of the distinct training instances?",
+        "a": "By default each predictor draws m instances with replacement from a training set of size m. A given instance is missed by one draw with probability 1 \u2212 1/m, so it's missed by all m draws with probability (1 \u2212 1/m)\u1d50, which approaches e\u207b\u00b9 \u2248 0.37 as m grows. So about 37% of the training instances are never sampled for a given predictor, and only about 63% of the distinct instances are actually used (some of them several times). The unused ones are that predictor's out-of-bag (OOB) instances, and they're a different 37% for each predictor. With enough predictors, each training instance is likely to be OOB for several of them, which is what lets the ensemble score itself on data its predictors haven't seen."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "What are the random patches and random subspaces methods, and how do you get each with BaggingClassifier?",
+        "a": "Both sample the input features, so each predictor is trained on a random subset of them. BaggingClassifier controls this with max_features and bootstrap_features, which work like max_samples and bootstrap but for features instead of instances.\n- Random patches: sample both the training instances and the features.\n- Random subspaces: keep all training instances (bootstrap=False and max_samples=1.0) but sample features (bootstrap_features=True and/or max_features below 1.0).\n\nSampling features adds even more predictor diversity, trading a bit more bias for a lower variance. It's particularly useful for high-dimensional inputs such as images, where it can speed up training considerably."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How does a random forest differ from simply bagging decision trees, and what BaggingClassifier is equivalent to a RandomForestClassifier?",
+        "a": "A random forest is an ensemble of decision trees generally trained with bagging (typically with samples as large as the training set), plus extra randomness when growing each tree: at every node, it searches for the best split among a random subset of the features instead of all n of them, \u221an features by default for classification. The trees become more diverse, trading a higher bias for a lower variance, which generally yields a better model overall. RandomForestClassifier is more convenient and optimized for trees, and with a few exceptions it accepts both the decision tree hyperparameters and the bagging ones. These two ensembles are equivalent:\n\n```python\nrnd_clf = RandomForestClassifier(n_estimators=500, max_leaf_nodes=16,\n                                 n_jobs=-1, random_state=42)\nbag_clf = BaggingClassifier(\n    DecisionTreeClassifier(max_features=\"sqrt\", max_leaf_nodes=16),\n    n_estimators=500, n_jobs=-1, random_state=42)\n```"
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How does a random forest measure feature importance, and how do you read it in Scikit-Learn?",
+        "a": "For each feature, it looks at the tree nodes that split on that feature and measures how much they reduce impurity on average across all the trees, as a weighted average in which each node counts in proportion to the number of training samples that reach it. After training, the scores are scaled to sum to 1 and exposed in the feature_importances_ attribute:\n\n```python\nrnd_clf = RandomForestClassifier(n_estimators=500, random_state=42)\nrnd_clf.fit(iris.data, iris.target)\nfor score, name in zip(rnd_clf.feature_importances_, iris.data.columns):\n    print(round(score, 2), name)\n```\n\nOn the iris dataset, petal length and petal width dominate while the sepal measurements matter far less. This makes random forests a quick way to find out which features actually matter, for example when you need to perform feature selection."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Walk through the AdaBoost training loop and how the final ensemble makes predictions.",
+        "a": "1. Give every training instance the same weight, w\u207d\u2071\u207e = 1/m.\n2. Train a predictor and compute its weighted error rate r\u2c7c, the total weight of the instances it misclassifies.\n3. Give the predictor a weight \u03b1\u2c7c = \u03b7\u00b7log((1 \u2212 r\u2c7c)/r\u2c7c), where \u03b7 is the learning rate (default 1): high if it's accurate, near 0 if it's guessing randomly, negative if it's worse than random.\n4. Multiply the weight of each misclassified instance by exp(\u03b1\u2c7c), then normalize the weights to sum to 1.\n5. Train the next predictor on the reweighted instances, and repeat until there are enough predictors or one is perfect.\n\nTo predict, each predictor votes for its class with weight \u03b1\u2c7c, and the class with the largest total wins. Scikit-Learn's AdaBoostClassifier uses SAMME, a multiclass version of AdaBoost, with decision stumps (trees with max_depth=1) as its default base estimator."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Walk through gradient boosting for regression by hand with three trees, and explain how the ensemble predicts.",
+        "a": "Instead of reweighting instances like AdaBoost, each new tree is trained on the residual errors left by the previous predictor:\n\n```python\ntree_reg1 = DecisionTreeRegressor(max_depth=2).fit(X, y)\ny2 = y - tree_reg1.predict(X)      # residual errors of the first tree\ntree_reg2 = DecisionTreeRegressor(max_depth=2).fit(X, y2)\ny3 = y2 - tree_reg2.predict(X)     # what the first two trees still miss\ntree_reg3 = DecisionTreeRegressor(max_depth=2).fit(X, y3)\ny_pred = sum(tree.predict(X_new) for tree in (tree_reg1, tree_reg2, tree_reg3))\n```\n\nThe ensemble's prediction is the sum of all the trees' predictions, so each tree adds a correction to what came before. GradientBoostingRegressor(max_depth=2, n_estimators=3, learning_rate=1.0) builds the same ensemble. A learning_rate below 1 scales down each tree's contribution (shrinkage), so you need more trees, but the model usually generalizes better. Where the name comes from: with a squared-error loss, the residuals are proportional to the negative gradient of the loss with respect to the current predictions, so adding each tree amounts to a gradient descent step on the predictions."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "How does GradientBoostingRegressor's built-in early stopping work, and what does its subsample hyperparameter do?",
+        "a": "Set n_iter_no_change to an integer, e.g., GradientBoostingRegressor(max_depth=2, learning_rate=0.05, n_estimators=500, n_iter_no_change=10). fit() then splits off a validation set (validation_fraction, 10% by default), evaluates the model each time it adds a tree, and stops adding trees once the last n_iter_no_change trees haven't improved the validation score by more than tol (default 0.0001). The number of trees it actually kept is stored in n_estimators_, often far fewer than n_estimators. Too small an n_iter_no_change may stop training too early and underfit; too large a value lets it overfit. Separately, subsample=0.25 trains each tree on a random 25% of the training instances. This is stochastic gradient boosting: it trades a higher bias for a lower variance and speeds up training considerably."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "What makes histogram-based gradient boosting so much faster than regular gradient boosting, and how does its Scikit-Learn API differ?",
+        "a": "HGB bins each input feature into integers, using at most max_bins bins (default 255, which is also the maximum). With far fewer thresholds to evaluate, compact integer data structures, and no need to sort the features for each tree, training drops from O(n \u00d7 m \u00d7 log(m)) to O(b \u00d7 m), where b is the number of bins: often hundreds of times faster on large datasets. The precision lost to binning acts as a regularizer, which may reduce overfitting or cause underfitting. Compared with GradientBoostingRegressor and GradientBoostingClassifier, the HistGradientBoosting classes:\n- turn early stopping on automatically above 10,000 instances (set early_stopping to force it on or off);\n- don't support subsampling;\n- call n_estimators max_iter;\n- only expose the max_leaf_nodes, min_samples_leaf, max_depth and max_features tree hyperparameters;\n- handle missing values and categorical features natively; categories must be integers below max_bins (e.g., from an OrdinalEncoder), flagged with categorical_features."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "How is the blender in a stacking ensemble trained, and how does Scikit-Learn's StackingClassifier automate it?",
+        "a": "The blender must learn from predictions like those the base predictors will make on new data, so its training set is built from out-of-sample predictions: run cross_val_predict() on each base predictor, so every training instance gets predictions from models that didn't see it. Each instance becomes one input feature per base predictor, and its target is copied from the original training set. After training the blender, retrain the base predictors on the full training set, since cross_val_predict() doesn't keep its fitted models. StackingClassifier does all of this:\n\n```python\nstacking_clf = StackingClassifier(\n    estimators=[(\"lr\", LogisticRegression(random_state=42)),\n                (\"rf\", RandomForestClassifier(random_state=42)),\n                (\"svc\", SVC(probability=True, random_state=42))],\n    final_estimator=RandomForestClassifier(random_state=43),\n    cv=5)  # number of cross-validation folds\nstacking_clf.fit(X_train, y_train)\n```\n\nIt feeds the blender each base estimator's predict_proba() output if available, else decision_function(), else predict(). Without a final_estimator, it uses LogisticRegression (StackingRegressor uses RidgeCV)."
       }
     ]
   },
@@ -341,7 +904,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch07-dimensionality-reduction",
     "title": "Chapter 7 \u2014 Dimensionality Reduction",
     "sources": [
-      "textbook/hands_on_ml/ch07-dimensionality-reduction/exercises.md"
+      "textbook/hands_on_ml/ch07-dimensionality-reduction/exercises.md",
+      "textbook/hands_on_ml/ch07-dimensionality-reduction/additional_exercises.md"
     ],
     "cards": [
       {
@@ -399,6 +963,90 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Does it make any sense to chain two different dimensionality reduction algorithms?",
         "a": "It can absolutely make sense to chain two different dimensionality reduction algorithms. A common example is using PCA or Random Projection to quickly get rid of a large number of useless dimensions, then applying another much slower dimensionality reduction algorithm, such as LLE. This two-step approach will likely yield roughly the same performance as using LLE only, but in a fraction of the time."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "What are the two main approaches to dimensionality reduction, and when does simple projection break down?",
+        "a": "Projection relies on the instances lying in or near a lower-dimensional linear subspace, e.g., a 3D dataset that sits close to a plane. That's common in practice, because many features are nearly constant and others are strongly correlated. Projecting every instance perpendicularly onto the subspace gives its new, lower-dimensional coordinates. Manifold learning instead models the curved shape the data lies on: a d-dimensional manifold is a part of an n-dimensional space (d < n) that locally resembles a d-dimensional hyperplane but can bend and twist globally. Projection breaks down when the subspace twists, as in the Swiss roll: flattening it onto a plane squashes different layers on top of one another, whereas manifold learning algorithms such as LLE, Isomap, t-SNE or UMAP aim to unroll it."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "What is the manifold hypothesis, and what extra assumption often comes with it that doesn't always hold?",
+        "a": "The manifold hypothesis says that most real-world high-dimensional datasets lie close to a much lower-dimensional manifold. MNIST illustrates it: handwritten digits are made of connected strokes, have white borders and are roughly centered, so they occupy a tiny, constrained corner of the space of all possible images. The companion assumption is that the task (classification or regression) will be simpler in the manifold's low-dimensional coordinates. Sometimes it is: a class boundary that's convoluted on the rolled-up Swiss roll can become a straight line once it's unrolled. But sometimes it's the reverse: a boundary like the plane x\u2081 = 5 is simple in the original 3D space yet turns into several disconnected segments on the unrolled manifold. So reducing dimensionality usually speeds up training, but it doesn't guarantee a better or simpler solution."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How does PCA choose the axes it projects onto, and why is preserving variance a sensible criterion?",
+        "a": "PCA first finds the axis along which the training set has the most variance: the first principal component (PC). The second PC is the axis orthogonal to the first that accounts for the most remaining variance, the third is orthogonal to both, and so on, with as many PCs as the dataset has dimensions. Projecting onto the first d PCs therefore keeps as much variance as any d-dimensional hyperplane can, which should lose the least information. Equivalently, the maximum-variance axis is the one that minimizes the mean squared distance between the original points and their projections onto it, so PCA finds the hyperplane that lies closest to the data."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Sketch PCA from scratch with NumPy: find the principal components, project the data down to d dimensions, and map it back.",
+        "a": "Center the data, compute its singular value decomposition X = U\u03a3V\u1d40, and read the principal components from the columns of V, which are the rows of V\u1d40, already ordered by explained variance:\n\n```python\nX_centered = X - X.mean(axis=0)       # PCA assumes centered data\nU, s, Vt = np.linalg.svd(X_centered)\nW2 = Vt[:2].T                         # W_d: the first d = 2 PCs as columns\nX2D = X_centered @ W2                 # project down to 2D\nX_recovered = X2D @ W2.T + X.mean(axis=0)\n```\n\nThe projection is X_d-proj = X\u00b7W_d, with X centered and W_d holding the first d columns of V, and the inverse transformation is X_recovered = X_d-proj\u00b7W_d\u1d40 (plus the mean you subtracted). The mean squared distance between the original data and X_recovered is the reconstruction error. Scikit-Learn's PCA class centers the data for you, and its components_ attribute holds W_d\u1d40, one row per principal component."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Why must you retrain a downstream model whenever you refit a PCA transformer, even on nearly the same data?",
+        "a": "The direction of each principal component's unit vector isn't guaranteed: perturb the training set slightly and a component can come back pointing the opposite way, and two components with nearly equal variance can even rotate or swap. The new projection may then produce features with flipped signs, mixed together or in a different order, and a model trained on the old PCA output would misread them. So treat PCA and the model that consumes its output as one unit and always retrain them together, for example as steps of a single pipeline."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "What are the main ways to choose the number of dimensions d when using PCA in Scikit-Learn?",
+        "a": "- Keep enough variance, say 95%: fit PCA() with all components and take the smallest d whose cumulative explained variance reaches the target, d = np.argmax(np.cumsum(pca.explained_variance_ratio_) >= 0.95) + 1.\n- More simply, pass the ratio itself: PCA(n_components=0.95) picks d during fit() and stores it in n_components_.\n- Plot the cumulative explained variance against d and look for the elbow, where it stops growing quickly.\n- When PCA is preprocessing for a supervised model, treat d as a hyperparameter: put PCA in a pipeline and search over pca__n_components (e.g., with RandomizedSearchCV), keeping whatever makes the final model perform best.\n- For visualization, simply use 2 or 3.\n\nThe explained_variance_ratio_ attribute gives the proportion of the dataset's variance that lies along each principal component."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "What is randomized PCA, when is it much faster, and how does Scikit-Learn's PCA pick its solver by default?",
+        "a": "PCA(svd_solver=\"randomized\") uses a stochastic algorithm that quickly approximates just the first d principal components. It costs O(m \u00d7 d\u00b2) + O(d\u00b3) instead of O(m \u00d7 n\u00b2) + O(n\u00b3) for a full SVD, so it's dramatically faster when d is much smaller than n. The default, svd_solver=\"auto\", decides as follows:\n- if the data has few features (n < 1,000) and at least 10 times more samples (m > 10n), it uses \"covariance_eigh\", which is very fast in that regime;\n- otherwise, if max(m, n) > 500 and n_components is an integer below 80% of min(m, n), it uses \"randomized\";\n- otherwise it computes a full SVD.\n\nSet svd_solver=\"full\" to force a full SVD, trading compute time for a slightly more precise result."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How do you run PCA with Scikit-Learn on a training set that doesn't fit in memory?",
+        "a": "Use IncrementalPCA and feed it one mini-batch at a time with partial_fit() instead of calling fit() on the whole set:\n\n```python\nfrom sklearn.decomposition import IncrementalPCA\n\ninc_pca = IncrementalPCA(n_components=154)\nfor X_batch in np.array_split(X_train, 100):\n    inc_pca.partial_fit(X_batch)\nX_reduced = inc_pca.transform(X_train)\n```\n\nAlternatively, store the data in a NumPy memmap, a binary file on disk that behaves like an in-memory array and loads only the parts that are needed, and call the usual fit() with a batch_size, e.g., IncrementalPCA(n_components=154, batch_size=batch_size).fit(X_mmap). Only the raw bytes are saved, so when reopening a memmap you must give its dtype and shape (without a shape, np.memmap() returns a 1D array)."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Why does random projection work, and how does the Johnson\u2013Lindenstrauss result pick the target number of dimensions?",
+        "a": "A random linear projection is very likely to preserve pairwise distances fairly well, so similar instances stay similar and very different ones stay very different. The Johnson\u2013Lindenstrauss lemma gives the minimum d that ensures, with high probability, that no squared distance changes by more than a tolerance \u03b5: d \u2265 4\u00b7log(m) / (\u03b5\u00b2/2 \u2212 \u03b5\u00b3/3). It depends only on the number of instances m and on \u03b5, not on the number of features n; e.g., m = 5,000 and \u03b5 = 0.1 give d = 7,300.\n\n```python\nfrom sklearn.random_projection import johnson_lindenstrauss_min_dim\n\nd = johnson_lindenstrauss_min_dim(m, eps=0.1)\nP = rng.standard_normal((d, n)) / np.sqrt(d)   # Gaussian, mean 0, variance 1/d\nX_reduced = X @ P.T\n```\n\n\"Training\" only needs the data's shape, not the data, so it's almost instantaneous, and transforming is a single matrix multiplication. The price is that it loses a bit more signal than PCA."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Compare Scikit-Learn's GaussianRandomProjection and SparseRandomProjection.",
+        "a": "Both work the same way: fit() uses johnson_lindenstrauss_min_dim() to pick the target dimensionality (tune it with eps, default 0.1, or force it with n_components), generates a random matrix stored in components_, and transform() multiplies by it, e.g., GaussianRandomProjection(eps=0.1, random_state=42).fit_transform(X). The difference is the matrix: SparseRandomProjection's is mostly zeros. Its density r, the fraction of nonzero entries, defaults to 1/\u221an, and each nonzero entry is +v or \u2212v with equal probability, where v = 1/\u221a(d\u00b7r). So it uses far less memory, is faster both to generate the matrix and to transform, keeps sparse inputs sparse (unless dense_output=True), and preserves distances nearly as well. It's usually the better choice, especially for large or sparse datasets. Neither offers a cheap inverse: you'd multiply the reduced data by the transpose of components_'s pseudoinverse, which is slow to compute for large matrices."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "Walk through how locally linear embedding (LLE) reduces dimensionality.",
+        "a": "1. For each training instance x\u207d\u2071\u207e, find its k nearest neighbors.\n2. Find the weights w\u1d62\u2c7c that best reconstruct x\u207d\u2071\u207e as a linear combination of its neighbors, minimizing the squared distance between x\u207d\u2071\u207e and \u2211\u2c7c w\u1d62\u2c7c\u00b7x\u207d\u02b2\u207e, with w\u1d62\u2c7c = 0 for non-neighbors and each instance's weights summing to 1. These weights capture the local geometry.\n3. Keep those weights fixed and find the low-dimensional points z\u207d\u2071\u207e that minimize the same kind of error, the squared distance between z\u207d\u2071\u207e and \u2211\u2c7c \u0175\u1d62\u2c7c\u00b7z\u207d\u02b2\u207e, summed over all instances.\n\nBecause it only preserves local relationships, LLE is good at unrolling twisted manifolds when there isn't too much noise, but it doesn't preserve distances at larger scales. The last step costs O(d\u00b7m\u00b2), so it scales poorly to large datasets. In Scikit-Learn: LocallyLinearEmbedding(n_components=2, n_neighbors=10).fit_transform(X)."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "Briefly contrast MDS, Isomap, t-SNE and LDA as dimensionality reduction techniques.",
+        "a": "- MDS (sklearn.manifold.MDS): tries to preserve the distances between instances; unlike random projection, it also works well on low-dimensional data.\n- Isomap (sklearn.manifold.Isomap): connects each instance to its nearest neighbors to build a graph, then tries to preserve the geodesic (shortest-path) distances through that graph. It works best on a smooth, low-dimensional manifold with a single global structure, like the Swiss roll.\n- t-SNE (sklearn.manifold.TSNE): keeps similar instances close and dissimilar ones apart. It's mostly used to visualize clusters in 2D or 3D, not as preprocessing for a model.\n- LDA (sklearn.discriminant_analysis.LinearDiscriminantAnalysis): a linear classifier that learns the most discriminative axes between the classes; projecting onto them keeps the classes as far apart as possible, a good step before another classifier.\n\nUMAP (in the umap-learn package) is a popular alternative to t-SNE that preserves more of the global structure and scales better."
       }
     ]
   },
@@ -406,7 +1054,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch08-unsupervised-learning-techniques",
     "title": "Chapter 8 \u2014 Unsupervised Learning Techniques",
     "sources": [
-      "textbook/hands_on_ml/ch08-unsupervised-learning-techniques/exercises.md"
+      "textbook/hands_on_ml/ch08-unsupervised-learning-techniques/exercises.md",
+      "textbook/hands_on_ml/ch08-unsupervised-learning-techniques/additional_exercises.md"
     ],
     "cards": [
       {
@@ -471,6 +1120,83 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Can you name two techniques to find the right number of clusters when using a Gaussian mixture model?",
         "a": "One way to find the right number of clusters when using a Gaussian mixture model is to plot the Bayesian information criterion (BIC) or the Akaike information criterion (AIC) as a function of the number of clusters, then choose the number of clusters that minimizes the BIC or AIC. Another technique is to use a Bayesian Gaussian mixture model, which automatically selects the number of clusters."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Walk through the k-means algorithm. Why is it guaranteed to converge, and what can still go wrong?",
+        "a": "Start by placing k centroids, for example on k instances picked at random. Then alternate two steps until the centroids stop moving:\n1. Assign each instance to the cluster whose centroid is closest.\n2. Move each centroid to the mean of the instances assigned to it.\n\nNeither step can increase the inertia, the sum of squared distances from each instance to its closest centroid: inertia = \u2211\u1d62 \u2016x\u207d\u2071\u207e \u2212 c\u207d\u2071\u207e\u2016\u00b2. Since it can't go below zero, the algorithm converges in a finite (usually small) number of iterations.\n\nWhat can go wrong: it may converge to a local optimum that depends on the initial centroids. That's why KMeans runs the whole algorithm n_init times and keeps the solution with the lowest inertia. The fitted model's inertia is in inertia_, and score() returns \u2212inertia to follow Scikit-Learn's greater-is-better convention."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "What's the difference between KMeans.predict() and KMeans.transform(), and what is transform() useful for?",
+        "a": "predict() does hard clustering: it returns the index of each instance's closest centroid. After fitting, the training instances' cluster indices are in labels_ (fit_predict() returns that same array) and the centroids are in cluster_centers_.\n\ntransform() is a form of soft clustering: it returns an m \u00d7 k matrix of the distances from each instance to every centroid. It's useful for:\n- Nonlinear dimensionality reduction: each instance's n features become k distances.\n- Feature engineering: the distances, or similarities derived from them (e.g., with a Gaussian RBF), make good extra features for another model.\n- Choosing which instances to label by hand: the instance closest to each centroid is a good representative of its cluster.\n\nFinding those representatives takes one argmin per column of the distance matrix:\n\n```python\nX_dist = kmeans.fit_transform(X_train)       # shape [m, k]\nrepresentative_idx = X_dist.argmin(axis=0)   # closest instance per cluster\nX_representative = X_train[representative_idx]\n```"
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How does k-means++ initialization work, and how does Scikit-Learn's KMeans initialize centroids by default?",
+        "a": "k-means++ spreads the initial centroids out:\n1. Pick the first centroid uniformly at random among the instances.\n2. Pick the next centroid among the instances, choosing x\u207d\u2071\u207e with probability D(x\u207d\u2071\u207e)\u00b2 / \u2211\u2c7c D(x\u207d\u02b2\u207e)\u00b2, where D(x) is the distance from x to the nearest centroid already chosen. Instances far from the existing centroids are much more likely to be picked.\n3. Repeat step 2 until there are k centroids, then run regular k-means.\n\nWell-separated starting centroids make it far less likely to miss a cluster or get stuck in a poor local optimum, so many fewer restarts are needed. KMeans uses init=\"k-means++\" by default, in a greedy variant that samples several candidates at each step and keeps the best one; n_init then defaults to 1 (versus 10 with init=\"random\"). If you know roughly where the centroids should be, you can also pass them to init as a NumPy array."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What are k-means' main limitations, and what should you do to the features before running it?",
+        "a": "- You must choose k, and a wrong k merges distinct clusters or chops real ones into pieces.\n- You need several runs (or a smart initialization) to avoid poor local optima.\n- It assigns instances by their distance to the centroids alone, implicitly assuming roughly round clusters of similar size and density. It does poorly on clusters with very different sizes or densities, or nonspherical shapes such as elongated ellipsoids; there, even a lower inertia doesn't mean a better clustering.\n- It favors similar-sized clusters: when segmenting an image by color, a small but vividly colored object may not get its own cluster unless k is large.\n\nScale the features first, or clusters get stretched along the features with the largest ranges; it doesn't guarantee round clusters, but it generally helps. For ellipsoidal clusters, a Gaussian mixture works better; for arbitrary shapes, try DBSCAN."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Walk through how DBSCAN forms clusters and flags anomalies. When does it work well, and when does it struggle?",
+        "a": "For each instance, DBSCAN counts how many instances lie within a distance \u03b5 (the eps hyperparameter), its \u03b5-neighborhood. An instance with at least min_samples instances in its neighborhood, itself included, is a core instance: it sits in a dense region. Every instance in a core instance's neighborhood joins that core instance's cluster, and since neighborhoods can contain other core instances, a chain of neighboring core instances forms a single cluster. Any instance that isn't a core instance and has no core instance in its neighborhood is an anomaly, labeled \u22121.\n\nIt finds any number of clusters of any shape, is robust to outliers, and has just two hyperparameters, though results are sensitive to eps. It struggles when density varies a lot between clusters or when clusters aren't separated by low-density regions, and at roughly O(m\u00b2n) it doesn't scale to large datasets. HDBSCAN (sklearn.cluster.HDBSCAN) often copes better with varying densities."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Scikit-Learn's DBSCAN has fit_predict() but no predict(). What does a fitted DBSCAN expose, and how can you assign new instances to clusters?",
+        "a": "After fitting, labels_ holds each instance's cluster index (\u22121 for anomalies), core_sample_indices_ the indices of the core instances, and components_ the core instances themselves. There's no predict() because the best way to classify new instances depends on the task, so you train a classifier of your choice on the clustering, for example a k-nearest neighbors classifier on the core instances:\n\n```python\ncore_labels = dbscan.labels_[dbscan.core_sample_indices_]\nknn = KNeighborsClassifier(n_neighbors=50)\nknn.fit(dbscan.components_, core_labels)\ny_dist, y_pred_idx = knn.kneighbors(X_new, n_neighbors=1)\ny_pred = core_labels[y_pred_idx]\ny_pred[y_dist > 0.2] = -1   # too far from every core instance: anomaly\n```\n\nknn.predict() (or predict_proba()) would always pick some cluster, even for an instance far from all of them. Checking the distance to the nearest neighbor with kneighbors() lets you flag such instances as anomalies instead."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How does the expectation-maximization (EM) algorithm fit a Gaussian mixture model, and how does it compare with k-means?",
+        "a": "EM starts from initial (e.g., random) cluster parameters, then alternates two steps until convergence:\n- Expectation step: using the current parameters, estimate for each instance the probability that it belongs to each cluster. These probabilities are called the clusters' responsibilities for the instances.\n- Maximization step: update each cluster's weight \u03d5\u207d\u02b2\u207e, mean \u03bc\u207d\u02b2\u207e and covariance matrix \u03a3\u207d\u02b2\u207e using all the instances, each weighted by the cluster's responsibility for it.\n\nYou can see it as a generalization of k-means that uses soft assignments instead of hard ones, and that learns each cluster's size, shape, and orientation (\u03a3) and relative weight (\u03d5), not just its center (\u03bc). Like k-means, it can converge to a poor solution, so run it several times by setting n_init, which defaults to 1 in GaussianMixture. The converged_ and n_iter_ attributes tell you whether it converged and how many iterations it took."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Besides hard clustering with predict(), what can you do with a fitted GaussianMixture, and how would you use it to detect anomalies?",
+        "a": "- predict_proba(X) gives soft clustering: the probability that each instance belongs to each cluster.\n- sample(n) generates n new instances plus their cluster indices (sorted by cluster index), since a GMM is a generative model.\n- score_samples(X) returns the log of the probability density at each instance. Exponentiating gives the density itself, which can exceed 1: it's a density, not a probability.\n\nFor anomaly detection, flag instances in low-density regions. For example, if about 2% of products are known to be defective, use the 2nd percentile of the densities as the threshold:\n\n```python\ndensities = gm.score_samples(X)\ndensity_threshold = np.percentile(densities, 2)\nanomalies = X[densities < density_threshold]\n```\n\nLower the threshold if too many normal instances get flagged (false positives), raise it if too many anomalies slip through (false negatives). If there are many outliers, they skew the model's idea of normal, so fit, remove the most extreme outliers, and fit again."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "What does GaussianMixture's covariance_type hyperparameter control, and why might you change it from the default?",
+        "a": "It constrains the clusters' covariance matrices, and therefore the shapes and orientations the clusters can take:\n- \"full\" (the default): each cluster has its own unconstrained covariance matrix, so any ellipsoidal shape, size, and orientation.\n- \"tied\": all clusters share the same covariance matrix, so the same shape, size, and orientation.\n- \"diag\": any ellipsoidal shape and size, but with axes parallel to the coordinate axes (diagonal covariance matrices).\n- \"spherical\": round clusters, which can still have different diameters (variances).\n\nConstraining the covariances leaves fewer parameters to learn, which helps EM converge to a good solution when there are many dimensions, many clusters, or few instances. It's also much cheaper: training is roughly O(kmn) with \"spherical\" or \"diag\", but O(kmn\u00b2 + kn\u00b3) with \"tied\" or \"full\", which doesn't scale to large numbers of features."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "What's the difference between probability and likelihood, and how do BIC and AIC use the maximized likelihood?",
+        "a": "For a model f(x; \u03b8), probability describes how plausible an outcome x is when the parameters \u03b8 are known; likelihood, \u2112(\u03b8|x) = f(x; \u03b8), describes how plausible parameter values \u03b8 are once x has been observed. A PDF integrates to 1 over x, but a likelihood needn't integrate to 1 over \u03b8. Maximum likelihood estimation finds the \u03b8 that maximizes it, usually via the log-likelihood: same maximum, and a product over independent instances becomes a sum.\n\nThe maximized likelihood L\u0302 measures how well the model fits, and both criteria trade it off against the number of learned parameters p (m is the number of instances):\n- BIC = log(m)\u00b7p \u2212 2\u00b7log(L\u0302)\n- AIC = 2p \u2212 2\u00b7log(L\u0302)\n\nLower is better. BIC's penalty grows with m, so it tends to pick simpler models than AIC. A fitted GaussianMixture provides bic(X) and aic(X)."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "Besides Gaussian mixtures, which anomaly and novelty detection algorithms does Scikit-Learn offer, and how does each one work?",
+        "a": "- Fast-MCD (EllipticEnvelope): assumes the inliers come from a single Gaussian distribution and estimates its elliptic envelope while ignoring the instances most likely to be outliers. Handy for cleaning up a dataset.\n- Isolation forest (IsolationForest): grows random trees that split on a random feature at a random threshold until every instance is isolated. Anomalies are usually far from the rest, so on average they get isolated in fewer splits. Efficient, even in high dimensions.\n- Local outlier factor (LocalOutlierFactor): compares the density around an instance with the density around its k nearest neighbors; an anomaly is more isolated than its neighbors are.\n- One-class SVM (OneClassSVM): in the kernel's high-dimensional space, separates the instances from the origin, which amounts to a small region enclosing them. Best for novelty detection; doesn't scale to large datasets.\n- PCA or any transformer with inverse_transform(): anomalies have a much larger reconstruction error."
       }
     ]
   },
@@ -478,7 +1204,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch09-introduction-to-artificial-neural-networks",
     "title": "Chapter 9 \u2014 Introduction to Artificial Neural Networks",
     "sources": [
-      "textbook/hands_on_ml/ch09-introduction-to-artificial-neural-networks/exercises.md"
+      "textbook/hands_on_ml/ch09-introduction-to-artificial-neural-networks/exercises.md",
+      "textbook/hands_on_ml/ch09-introduction-to-artificial-neural-networks/additional_exercises.md"
     ],
     "cards": [
       {
@@ -536,6 +1263,90 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Can you list all the hyperparameters you can tweak in a basic MLP? If the MLP overfits the training data, how could you tweak these hyperparameters to try to solve the problem?",
         "a": "Here is a list of all the hyperparameters you can tweak in a basic MLP: the number of hidden layers, the number of neurons in each hidden layer, and the activation function used in each hidden layer and in the output layer. In general, the ReLU activation function (or one of its variants; see Chapter 11) is a good default for the hidden layers. For the output layer, in general you will want the sigmoid activation function for binary classification, the softmax activation function for multiclass classification, or no activation function for regression. If the MLP overfits the training data, you can try reducing the number of hidden layers and reducing the number of neurons per hidden layer."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "What is the perceptron learning rule, and what is Scikit-Learn's Perceptron class equivalent to?",
+        "a": "A perceptron is a single layer of threshold logic units (TLUs): each one computes z = w\u1d40x + b and outputs step(z). It's trained one instance at a time, and each output neuron that made a wrong prediction gets its weights adjusted:\n\nw\u1d62,\u2c7c \u2190 w\u1d62,\u2c7c + \u03b7(y\u2c7c \u2212 \u0177\u2c7c)x\u1d62\n\nHere w\u1d62,\u2c7c connects input i to neuron j, x\u1d62 is the instance's ith input value, y\u2c7c and \u0177\u2c7c are neuron j's target and predicted outputs, and \u03b7 is the learning rate. A correct prediction leaves the weights unchanged; a wrong one strengthens the connections from inputs that would have pushed toward the right answer, an error-driven twist on Hebb's rule. If the classes are linearly separable, training is guaranteed to converge.\n\nThis is essentially stochastic gradient descent: Scikit-Learn's Perceptron is equivalent to SGDClassifier(loss=\"perceptron\", learning_rate=\"constant\", eta0=1, penalty=None), so there's no regularization by default."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Why does an MLP need nonlinear activation functions in its hidden layers?",
+        "a": "Stacking linear layers without anything nonlinear in between just gives another linear layer: (XW\u2081 + b\u2081)W\u2082 + b\u2082 = X(W\u2081W\u2082) + (b\u2081W\u2082 + b\u2082), which is a single layer with weights W\u2081W\u2082 and bias b\u2081W\u2082 + b\u2082. So however deep it is, such a network can only learn linear functions and linear decision boundaries; it can't even solve XOR.\n\nPutting a nonlinear activation such as ReLU after each hidden layer prevents this collapse, so each layer can build on the previous one. With nonlinear activations, a large enough network can approximate any continuous function."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Why must an MLP's hidden-layer weights be initialized randomly rather than all to zero?",
+        "a": "If all the weights and biases in a layer start out equal (for example, all zero), every neuron in that layer computes the same output and receives exactly the same gradient during backpropagation, so every update keeps them identical. However many neurons the layer has, it behaves like a single neuron.\n\nRandom initialization breaks this symmetry, letting each neuron learn a different feature. The biases can start at zero as long as the weights are random. This only matters once there are hidden layers: a plain linear or logistic regression model trains fine from all-zero weights."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Why does tanh often train faster than the sigmoid, and why did ReLU become the default hidden-layer activation despite its flaws?",
+        "a": "The sigmoid \u03c3(z) = 1 / (1 + exp(\u2212z)) outputs values between 0 and 1. tanh(z) = 2\u03c3(2z) \u2212 1 has the same S-shape but ranges from \u22121 to 1, so each layer's outputs tend to be roughly centered around 0 at the start of training, which often speeds up convergence.\n\nReLU(z) = max(0, z) has flaws: it isn't differentiable at z = 0 (the abrupt change of slope can make gradient descent bounce around), and its gradient is 0 for negative inputs. But it's very fast to compute and works very well in practice, and since its output has no maximum value, it avoids some of the gradient problems of S-shaped functions, which flatten out when their inputs get large in magnitude. It's the default for most architectures, Transformers being a notable exception."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How do you choose the output layer and the loss function for a regression MLP?",
+        "a": "- Output neurons: one per value to predict, e.g., two for an object's center coordinates, or four to add its bounding box's width and height.\n- Output activation: usually none, so the model can output any value. Use ReLU or softplus(z) = log(1 + exp(z)), a smooth variant of ReLU, to guarantee positive outputs. Use sigmoid or tanh to keep predictions within a range, after scaling the targets to 0\u20131 or \u22121\u20131, respectively.\n- Loss: usually the MSE. If the training set has many outliers, prefer the Huber loss: quadratic for errors below a threshold \u03b4 (typically 1), linear above it. The linear part makes it less sensitive to outliers than the MSE, and the quadratic part makes it converge faster and more precisely than the mean absolute error."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Sketch training a regression MLP with Scikit-Learn's MLPRegressor, and explain its key hyperparameters.",
+        "a": "A pipeline standardizes the inputs, which matters because gradient descent converges poorly when features have very different scales:\n\n```python\nfrom sklearn.neural_network import MLPRegressor\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\n\nmlp_reg = MLPRegressor(hidden_layer_sizes=[50, 50, 50],\n                       early_stopping=True, random_state=42)\npipeline = make_pipeline(StandardScaler(), mlp_reg)\npipeline.fit(X_train, y_train)\ny_pred = pipeline.predict(X_test)\n```\n\n- hidden_layer_sizes lists the number of neurons in each hidden layer; the input and output sizes adapt to the data when training starts. Hidden layers use ReLU, and the output layer has no activation.\n- early_stopping=True holds out 10% of the training set (validation_fraction) and stops once the validation score hasn't improved for 10 consecutive epochs (n_iter_no_change); best_validation_score_ keeps the best score.\n- It minimizes the MSE using the Adam optimizer, plus a small \u21132 penalty whose strength is alpha (0.0001 by default).\n- score() returns the R\u00b2 score, as for every Scikit-Learn regressor."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How does MLPClassifier differ from MLPRegressor, and why scale Fashion MNIST pixels with a MinMaxScaler rather than a StandardScaler?",
+        "a": "MLPClassifier has the same API and hyperparameters, but for multiclass tasks its output layer uses softmax, it minimizes the cross-entropy rather than the MSE, score() returns the accuracy rather than R\u00b2, and predict_proba() returns the estimated class probabilities.\n\nThe MinMaxScaler maps the pixel intensities from 0\u2013255 to 0\u20131, a range that suits MLPClassifier's defaults, such as its learning rate and weight initialization scale. A StandardScaler would rescale every pixel to unit variance, including pixels that barely vary across images (like those near the edges, which are almost always white). That would inflate them and give them more importance than they deserve. MinMaxScaler often works better for images, but it's worth checking on your data."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Why should you be wary of a neural net's estimated class probabilities, and how can label smoothing help?",
+        "a": "Neural nets tend to be overconfident, especially if they're trained a bit too long. A classifier that's about 90% accurate can still assign close to 100% probability to its wrong predictions, so don't take predict_proba() outputs at face value.\n\nLabel smoothing replaces the one-hot targets with softer ones: the target class gets slightly less than 1 (e.g., 0.9), and the remainder is spread evenly across the other classes (0.1/9 each, with 10 classes). The model is no longer rewarded for pushing its probabilities all the way to 0 or 1, which reduces overconfidence."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Why are deep networks usually more parameter-efficient than shallow ones, and how does that make transfer learning possible?",
+        "a": "In theory one hidden layer can model very complex functions if it has enough neurons, but deep networks can model them with exponentially fewer neurons because each layer reuses and combines the features of the layer below. In a face classifier, the lowest layers might detect lines and arcs, the next ones shapes such as squares and circles, the next ones eyes and noses, and the top layer uses these to classify faces. This hierarchy helps deep nets converge faster and generalize better.\n\nSince the lower layers learn generic low-level features, a network for a related task (say, recognizing hairstyles) can start with its lower layers initialized to a trained face network's weights, and only has to learn the higher-level structure. That's transfer learning: training is much faster and needs far less data."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "How should you size an MLP's hidden layers? Explain the \"stretch pants\" approach and why bottleneck layers are risky.",
+        "a": "The input and output sizes are dictated by the task. For hidden layers, the old pyramid shape (fewer neurons in each successive layer) has largely been abandoned: giving all hidden layers the same size usually works as well or better, and leaves just one hyperparameter to tune (a slightly larger first layer sometimes helps).\n\nStretch pants approach: rather than hunting for the exact right size, build a model with somewhat more layers and neurons than you need, and rely on early stopping and other regularization to keep it from overfitting. This avoids bottlenecks: a layer that's too narrow can't preserve all the useful information from the inputs, and the layers above can never recover what it lost. For example, make the first hidden layer larger than the number of PCA dimensions needed to keep 95% of the variance. Adding layers generally pays off more than adding neurons per layer."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "Walk through finding a good learning rate by exponentially increasing it during a short training run.",
+        "a": "1. Start training with a tiny learning rate, such as 10\u207b\u2075.\n2. After each iteration, multiply the learning rate by a constant factor so it reaches a huge value, such as 10, after a few hundred iterations. To go from 10\u207b\u2075 to 10 in 500 iterations, the factor is (10 / 10\u207b\u2075) to the power 1/500, about 1.028.\n3. Plot the loss against the learning rate, with a log scale for the learning rate. The loss drops at first, then shoots back up once the learning rate gets too large.\n4. Pick a learning rate roughly 10 times lower than the turning point where the loss starts climbing.\n5. Reinitialize the model and train it normally with that learning rate.\n\nAs a rule of thumb, the optimal learning rate is about half the maximum learning rate, above which training diverges."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "What are the trade-offs between large and small batch sizes, and what's a sensible strategy for choosing one?",
+        "a": "Large batches let hardware accelerators like GPUs process many instances in parallel, so training sees more instances per second; hence the common advice to use the largest batch size that fits in GPU memory. But large batches can make training unstable, especially early on and with smaller models, and the resulting model may generalize worse.\n\nThe research is mixed: some found that small batches (2 to 32) produced better models in less time, while others trained with very large batches (up to 8,192) without a generalization gap, using tricks such as learning rate warmup (starting with a small learning rate and ramping it up).\n\nA sensible strategy: try a large batch size with warmup, and switch to a smaller one if training is unstable or the final performance is disappointing. The best learning rate depends on the batch size, so re-tune it whenever you change the batch size."
       }
     ]
   },
@@ -543,7 +1354,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch10-building-neural-networks-with-pytorch",
     "title": "Chapter 10 \u2014 Building Neural Networks with PyTorch",
     "sources": [
-      "textbook/hands_on_ml/ch10-building-neural-networks-with-pytorch/exercises.md"
+      "textbook/hands_on_ml/ch10-building-neural-networks-with-pytorch/exercises.md",
+      "textbook/hands_on_ml/ch10-building-neural-networks-with-pytorch/additional_exercises.md"
     ],
     "cards": [
       {
@@ -629,6 +1441,62 @@ window.DECKS = [
         "kind": "exercise",
         "q": "What is the difference between torch.jit.trace() and torch.jit.script()?",
         "a": "Both torch.jit.trace() and torch.jit.script() attempt to capture your model's computation graph and turn it into TorchScript code that can be optimized, saved, and deployed to various platforms. However, these functions work very differently:\n- The torch.jit.trace() function runs your model with a tracing tensor that captures which operations are executed. It's quite simple and works well for simple models, but it cannot capture conditionals (e.g., if, elif, else, match): it only captures the branch of the conditional that is actually executed during tracing. Similarly, if your model contains a loop (e.g., for or while) then tracing will not capture the loop itself, it will only capture the repeated operations.\n- The torch.jit.script() function actually parses your Python code to generate TorchScript code. This allows it to detect conditionals (as long as the conditions are tensors), and also capture loops. However, it only works with a subset of Python: you cannot use global variables, Python generators (yield), complex list comprehensions, variable length function arguments (*args or **kwargs), or match statements. Moreover, types must be fixed (a function cannot return an integer in some cases and a float in others), and you can only call other functions if they also respect these rules, so no standard library, no third-party libraries, etc."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "When moving data between NumPy and PyTorch, what dtype and memory-sharing gotchas should you watch for?",
+        "a": "- NumPy floats default to 64 bits, PyTorch's to 32 bits, which is plenty for neural nets and uses half the RAM. torch.tensor(array) keeps a float64 array's dtype, which wastes memory and time and clashes with float32 model weights (you get a dtype mismatch error). Pass dtype=torch.float32, or use torch.FloatTensor(array), which converts to 32 bits.\n- torch.tensor() and torch.FloatTensor() copy the data. torch.from_numpy(array) creates a CPU tensor that shares the array's memory: no copy, but modifying one modifies the other.\n- Going the other way, tensor.numpy() only works on a CPU tensor that doesn't require gradients, so the general form is tensor.detach().cpu().numpy()."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Sketch linear regression trained with raw tensors and autograd (no nn.Module, no optimizer), and explain what each autograd step does.",
+        "a": "This runs batch gradient descent on the whole training set:\n\n```python\nw = torch.randn((n_features, 1), requires_grad=True)\nb = torch.tensor(0., requires_grad=True)\nfor epoch in range(n_epochs):\n    y_pred = X_train @ w + b\n    loss = ((y_pred - y_train) ** 2).mean()\n    loss.backward()\n    with torch.no_grad():\n        w -= learning_rate * w.grad\n        b -= learning_rate * b.grad\n    w.grad.zero_()\n    b.grad.zero_()\n```\n\n- requires_grad=True makes w and b leaf tensors that autograd tracks. Each forward pass builds a fresh computation graph on the fly: every result computed from them carries a grad_fn recording the operation that produced it.\n- loss.backward() backpropagates from the loss to the leaves and adds each gradient to the leaf's grad attribute.\n- The update runs inside torch.no_grad() so it isn't recorded in the graph; an in-place update of a leaf that requires grad would raise an error anyway.\n- backward() accumulates gradients rather than overwriting them, so zero them every iteration, or the updates will be silently wrong.\n- y_train must be a column vector of shape [m, 1], like y_pred. With shape [m], the subtraction would broadcast to [m, m] and quietly compute the wrong loss."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How would you write an evaluation function that computes the RMSE correctly over mini-batches, and how do TorchMetrics streaming metrics help?",
+        "a": "Averaging a per-batch metric can be wrong: the mean of the batch RMSEs isn't the RMSE over the whole dataset, because the mean of square roots isn't the square root of the mean. You could average an additive metric, like the MSE, and take the square root at the end, or use a TorchMetrics streaming metric, which accumulates what it needs across batches: reset() at the start, update(predictions, targets) for each batch, and compute() at the end. An evaluation function built on one:\n\n```python\ndef evaluate_tm(model, data_loader, metric):\n    model.eval()\n    metric.reset()\n    with torch.no_grad():\n        for X_batch, y_batch in data_loader:\n            X_batch, y_batch = X_batch.to(device), y_batch.to(device)\n            metric.update(model(X_batch), y_batch)\n    return metric.compute()\n\nrmse = torchmetrics.MeanSquaredError(squared=False).to(device)\nvalid_rmse = evaluate_tm(model, valid_loader, rmse)\n```\n\nNote the model.eval() call and the torch.no_grad() context, and that the metric is moved to the same device as the model."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Sketch a custom nn.Module for a nonsequential Wide & Deep network, and explain how PyTorch finds its parameters.",
+        "a": "Create the layers in the constructor after calling super().__init__(), and wire them together in forward(), which can use any Python logic:\n\n```python\nclass WideAndDeep(nn.Module):\n    def __init__(self, n_features):\n        super().__init__()\n        self.deep_stack = nn.Sequential(\n            nn.Linear(n_features, 50), nn.ReLU(),\n            nn.Linear(50, 40), nn.ReLU())\n        self.output_layer = nn.Linear(n_features + 40, 1)\n\n    def forward(self, X):\n        deep_output = self.deep_stack(X)\n        wide_and_deep = torch.concat([X, deep_output], dim=1)\n        return self.output_layer(wide_and_deep)\n```\n\nAssigning a module or an nn.Parameter to an attribute registers it, so model.parameters(), which you pass to the optimizer, finds every parameter recursively, including those inside deep_stack. Plain tensors aren't included, even with requires_grad=True. Modules or parameters kept in a regular Python list or dict aren't registered either: use nn.ModuleList or nn.ModuleDict (nn.ParameterList or nn.ParameterDict for parameters). Call model(X) rather than model.forward(X), so that hooks run."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "What does a DataLoader need from a dataset, and how would you write a custom Dataset that feeds named inputs to a multi-input model?",
+        "a": "A DataLoader only needs an object with __len__() (the number of samples) and __getitem__(idx) (one sample with its target). TensorDataset provides this for tensors sharing the same first dimension: for example, TensorDataset(X_wide, X_deep, y) yields three tensors per batch. For anything else, subclass torch.utils.data.Dataset. With several inputs, returning a dictionary of named inputs avoids mixing up their order. Here's such a dataset, then the training loop's use of it:\n\n```python\nclass WideAndDeepDataset(torch.utils.data.Dataset):\n    def __init__(self, X_wide, X_deep, y):\n        self.X_wide, self.X_deep, self.y = X_wide, X_deep, y\n    def __len__(self):\n        return len(self.y)\n    def __getitem__(self, idx):\n        inputs = {\"X_wide\": self.X_wide[idx], \"X_deep\": self.X_deep[idx]}\n        return inputs, self.y[idx]\n\nfor inputs, y_batch in train_loader:\n    inputs = {name: X.to(device) for name, X in inputs.items()}\n    y_pred = model(**inputs)  # keys match forward()'s argument names\n```\n\nThe DataLoader's default collation batches each dictionary entry separately, so each batch arrives as a dictionary of batched tensors."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Sketch loading Fashion MNIST with TorchVision as float tensors, with a validation split. What does each piece do?",
+        "a": "This loads the 60,000 training images and holds out 5,000 of them for validation:\n\n```python\nimport torchvision\nimport torchvision.transforms.v2 as T\n\ntoTensor = T.Compose([T.ToImage(), T.ToDtype(torch.float32, scale=True)])\ntrain_and_valid_data = torchvision.datasets.FashionMNIST(\n    root=\"datasets\", train=True, download=True, transform=toTensor)\ntrain_data, valid_data = torch.utils.data.random_split(\n    train_and_valid_data, [55_000, 5_000])\n```\n\n- The transform runs on the fly each time a sample is accessed. Without it you'd get PIL images with integer pixels from 0 to 255. ToImage converts them to TorchVision's Image type (a Tensor subclass) with the channel dimension first, and ToDtype(torch.float32, scale=True) converts to floats scaled to 0\u20131.\n- root is where the data is stored, download=True fetches it if it's missing, and train=False would load the test set instead.\n- random_split() carves out a validation set; call torch.manual_seed() first for a reproducible split.\n\nEach image is then a [1, 28, 28] tensor (channels, height, width): PyTorch puts channels first, unlike Matplotlib or PIL. The class names are in the original dataset's classes attribute; the subsets returned by random_split() don't have it."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Sketch a hyperparameter search with Optuna. What do the key calls do, and how can you stop hopeless trials early?",
+        "a": "This tunes an MLP classifier's learning rate and hidden layer size:\n\n```python\ndef objective(trial):\n    lr = trial.suggest_float(\"learning_rate\", 1e-5, 1e-1, log=True)\n    n_hidden = trial.suggest_int(\"n_hidden\", 20, 300)\n    model = ImageClassifier(n_inputs=28 * 28, n_hidden1=n_hidden,\n                            n_hidden2=n_hidden, n_classes=10).to(device)\n    optimizer = torch.optim.SGD(model.parameters(), lr=lr)\n    ...  # train the model, then measure its validation accuracy\n    return validation_accuracy\n\nsampler = optuna.samplers.TPESampler(seed=42)\nstudy = optuna.create_study(direction=\"maximize\", sampler=sampler)\nstudy.optimize(objective, n_trials=50)\n```\n\n- The objective asks the Trial for values with suggest_float(), suggest_int(), or suggest_categorical(); log=True samples on a log scale, so small values get explored too. It returns the validation score.\n- Optuna minimizes by default, hence direction=\"maximize\". The default TPE sampler learns from past trials to focus on promising regions, which usually beats random search. Results end up in study.best_params and study.best_value.\n- To pass data loaders without globals, wrap the objective with functools.partial() or a lambda.\n- To prune bad trials, pass a pruner such as MedianPruner to create_study(), call trial.report(score, epoch) after each epoch, and raise optuna.TrialPruned() when trial.should_prune() returns True."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "What's the recommended way to save and load a PyTorch model, and why is it better than torch.save(model)?",
+        "a": "torch.save(model, path) pickles the whole model object. That's convenient, but loading a pickle can run arbitrary code, so only load trusted files (torch.load() needs weights_only=False for this). Pickles are also brittle across Python versions and folder layouts, and your custom classes must be importable at load time.\n\nSaving model.state_dict() is safer: it's an OrderedDict of the parameters (as named by named_parameters()) plus any buffers registered with register_buffer(), and loading it with weights_only=True only accepts data. You must rebuild the exact same architecture first, so save its hyperparameters alongside:\n\n```python\ntorch.save({\"model_state_dict\": model.state_dict(),\n            \"model_hyperparameters\": {\"n_inputs\": 28 * 28, \"n_hidden1\": 300,\n                                      \"n_hidden2\": 100, \"n_classes\": 10}},\n           \"my_model.pt\")\n\nloaded = torch.load(\"my_model.pt\", weights_only=True)\nnew_model = ImageClassifier(**loaded[\"model_hyperparameters\"])\nnew_model.load_state_dict(loaded[\"model_state_dict\"])\nnew_model.eval()\n```\n\nTo resume training later, also save the optimizer's state_dict() and information like the current epoch."
       }
     ]
   },
@@ -636,7 +1504,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch11-training-deep-neural-networks",
     "title": "Chapter 11 \u2014 Training Deep Neural Networks",
     "sources": [
-      "textbook/hands_on_ml/ch11-training-deep-neural-networks/exercises.md"
+      "textbook/hands_on_ml/ch11-training-deep-neural-networks/exercises.md",
+      "textbook/hands_on_ml/ch11-training-deep-neural-networks/additional_exercises.md"
     ],
     "cards": [
       {
@@ -687,6 +1556,97 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Does dropout slow down training? Does it slow down inference (i.e., making predictions on new instances)? What about MC dropout?",
         "a": "Yes, dropout does slow down training, in general roughly by a factor of two. However, it has no impact on inference speed since it is only turned on during training. MC Dropout is exactly like dropout during training, but it is still active during inference, so each inference is slowed down slightly. More importantly, when using MC Dropout you generally want to run inference 10 times or more to get better predictions. This means that making predictions is slowed down by a factor of 10 or more."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "State the Glorot, He, and LeCun weight-initialization rules, and say which activation functions each one is meant for.",
+        "a": "Each draws every weight independently from a zero-mean distribution whose variance depends on the layer's fan-in (number of inputs) and/or fan-out (number of outputs), chosen so that activations and gradients keep roughly the same variance from layer to layer:\n\n- Glorot (Xavier): \u03c3\u00b2 = 1 / fan_avg, where fan_avg = (fan_in + fan_out) / 2. For no activation, tanh, sigmoid, or softmax.\n- He (Kaiming): \u03c3\u00b2 = 2 / fan_in. For ReLU and its variants (leaky ReLU, ELU, GELU, Swish, Mish, ...); the factor 2 compensates for ReLU outputting zero for roughly half of its inputs.\n- LeCun: \u03c3\u00b2 = 1 / fan_in, i.e., Glorot with fan_in in place of fan_avg. For SELU, preferably with a normal distribution.\n\nTo sample from a uniform distribution instead, use the range \u2212r to +r with r = \u221a(3\u03c3\u00b2)."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How would you apply He initialization to every nn.Linear layer of a PyTorch model, and why override the default initialization at all?",
+        "a": "nn.Linear initializes its weights with Kaiming uniform scaled down by a factor of \u221a6 (and its biases randomly), which isn't the right scale for any common activation function. The torch.nn.init module provides in-place initializers (hence the trailing underscore) such as kaiming_uniform_, kaiming_normal_, and zeros_. To initialize a whole model, write a function that handles one module and pass it to model.apply(), which calls it on every submodule recursively:\n\n```python\ndef use_he_init(module):\n    if isinstance(module, nn.Linear):\n        nn.init.kaiming_uniform_(module.weight)\n        nn.init.zeros_(module.bias)\n\nmodel = nn.Sequential(nn.Linear(50, 40), nn.ReLU(), nn.Linear(40, 1))\nmodel.apply(use_he_init)\n```\n\nFor leaky ReLU with slope \u03b1, also pass a=\u03b1 and the nonlinearity, e.g. nn.init.kaiming_uniform_(w, a=0.2, nonlinearity=\"leaky_relu\"), which divides the variance by 1 + \u03b1\u00b2."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Walk through what a batch-normalization layer computes during training, and what changes at inference time.",
+        "a": "During training, BN standardizes each input feature using statistics of the current mini-batch B of m_B instances, then rescales and shifts it:\n\n1. \u03bc_B = (1/m_B) \u2211\u1d62 x\u1d62\n2. \u03c3_B\u00b2 = (1/m_B) \u2211\u1d62 (x\u1d62 \u2212 \u03bc_B)\u00b2\n3. x\u0302\u1d62 = (x\u1d62 \u2212 \u03bc_B) / \u221a(\u03c3_B\u00b2 + \u03b5)\n4. z\u1d62 = \u03b3 \u2297 x\u0302\u1d62 + \u03b2\n\nAll of this is per feature: \u03b5 is a tiny smoothing term that avoids division by zero, and the scale \u03b3 and offset \u03b2 are learned by backprop, letting the network pick the best scale and mean for each input.\n\nAt inference you may have a single instance, or a small or non-independent batch, so batch statistics would be unavailable or unreliable. Instead, during training BN also keeps exponential moving averages of the batch means and variances, and in evaluation mode it uses these running \u03bc and \u03c3\u00b2 in place of \u03bc_B and \u03c3_B\u00b2."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What PyTorch details matter when you add nn.BatchNorm1d or nn.BatchNorm2d layers to a model?",
+        "a": "- The constructor takes the number of features (channels, for BatchNorm2d). BatchNorm1d expects inputs of shape [batch, features]; BatchNorm2d expects [batch, channels, height, width] and computes its statistics over the batch and both spatial dimensions, so it learns one \u03b3 and one \u03b2 per channel.\n- \u03b3 and \u03b2 are the layer's weight and bias parameters. The running mean and variance are buffers (running_mean, running_var), updated during training but not by the optimizer.\n- Call model.train() before training and model.eval() before evaluating or predicting: forgetting to switch is one of the most common bugs.\n- When BN comes right after a linear or convolutional layer (before the activation), create that layer with bias=False, since BN's \u03b2 already provides an offset.\n- momentum is the weight given to the new batch statistic in the running average (default 0.1), the reverse of the usual convention; values such as 0.01 work better for small batches."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How does layer normalization differ from batch normalization, and how do you tell nn.LayerNorm which dimensions to normalize over?",
+        "a": "Batch norm normalizes each feature using statistics computed across the instances in the batch; layer norm normalizes each instance using statistics computed across its own features. So LN behaves identically during training and inference, needs no running averages, works with any batch size, and an instance's output never depends on the other instances in its batch. That's why it's popular in recurrent nets and standard in transformers, and it's increasingly used in CNNs. Like BN, it learns a scale and an offset for each normalized element.\n\nnn.LayerNorm takes the shape of the trailing dimension(s) to normalize over. For images batched as [32, 3, 100, 200]:\n\n- nn.LayerNorm([100, 200]) normalizes each channel of each image separately.\n- nn.LayerNorm([3, 100, 200]) normalizes over all channels at once, which is what most vision architectures that use LN do."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "How do you add gradient clipping to a PyTorch training loop, and how do clip_grad_norm_ and clip_grad_value_ differ?",
+        "a": "Clip after computing the gradients and before the optimizer uses them:\n\n```python\nloss.backward()\nnn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\noptimizer.step()\noptimizer.zero_grad()\n```\n\n- clip_grad_norm_ rescales the gradients whenever their \u21132 norm (all the given parameters' gradients taken together as one vector) exceeds max_norm, so the update keeps its direction.\n- clip_grad_value_(model.parameters(), clip_value=1.0) clamps each gradient component to between \u2212clip_value and +clip_value independently, which can change the direction: [0.9, 100.0] becomes [0.9, 1.0], whereas clipping by norm gives about [0.009, 1.0].\n\nBoth work well in practice; which is better depends on the dataset. Clipping is mainly used against exploding gradients in recurrent nets, where batch norm is hard to use."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Walk through reusing the layers of a pretrained PyTorch model, model_A, to build a binary classifier for a similar task.",
+        "a": "Deep-copy every layer except model_A's output layer, add a new head, and freeze the reused layers at first:\n\n```python\nimport copy\nreused_layers = copy.deepcopy(model_A[:-1])  # all layers but the old head\nnew_head = nn.Linear(100, 1)  # 100 features in, 1 logit out\nmodel_B = nn.Sequential(*reused_layers, new_head).to(device)\nfor layer in model_B[:-1]:\n    for param in layer.parameters():\n        param.requires_grad = False  # gradient descent won't change them\n```\n\nWithout the deep copy, model_B would share its layers with model_A, so training B would modify A too. Freezing protects the pretrained weights from the large error gradients that the randomly initialized head produces early on. Train with a loss suited to the new task (here nn.BCEWithLogitsLoss, since the head outputs one logit) for a few epochs, then unfreeze the reused layers, lower the learning rate, and keep training to fine-tune them. The more similar the tasks, the more layers you can reuse; lower layers transfer best."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Write the momentum optimization update, explain why it speeds up training, and say what Nesterov accelerated gradient changes.",
+        "a": "Plain gradient descent updates \u03b8 \u2190 \u03b8 \u2212 \u03b7\u2207J(\u03b8), ignoring earlier gradients. Momentum uses the gradient as an acceleration rather than a speed:\n\n1. m \u2190 \u03b2m \u2212 \u03b7\u2207J(\u03b8)\n2. \u03b8 \u2190 \u03b8 + m\n\nThe momentum coefficient \u03b2 (typically 0.9) acts as friction, from 0 (high friction) to 1 (none). With a constant gradient, the steps grow to a terminal size of \u03b7\u2016\u2207J(\u03b8)\u2016 / (1 \u2212 \u03b2), so with \u03b2 = 0.9 it goes 10 times faster than plain gradient descent: it escapes plateaus and rolls down long, narrow valleys much faster.\n\nNesterov accelerated gradient (NAG) measures the gradient slightly ahead, at \u03b8 + \u03b2m, instead of at \u03b8. The momentum generally points toward the optimum, so that gradient is a bit more accurate, and it damps oscillations: NAG is almost always faster than plain momentum. In PyTorch: torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, nesterov=True)."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Walk through the Adam update rule, what its bias-correction steps are for, and its usual hyperparameter values.",
+        "a": "Adam (adaptive moment estimation) tracks decaying averages of past gradients (the first moment, as in momentum) and of past squared gradients (the uncentered second moment, as in RMSProp). With g = \u2207J(\u03b8) and iteration t = 1, 2, \u2026:\n\n1. m \u2190 \u03b2\u2081m \u2212 (1 \u2212 \u03b2\u2081)g\n2. s \u2190 \u03b2\u2082s + (1 \u2212 \u03b2\u2082)g \u2297 g\n3. m\u0302 \u2190 m / (1 \u2212 \u03b2\u2081\u1d57)\n4. \u015d \u2190 s / (1 \u2212 \u03b2\u2082\u1d57)\n5. \u03b8 \u2190 \u03b8 + \u03b7 m\u0302 \u2298 (\u221a\u015d + \u03b5)\n\nDividing by \u221a\u015d gives each parameter its own effective learning rate, smaller where gradients are large. Since m and s start at 0, they're biased toward 0 early on; steps 3 and 4 scale them up to compensate, an effect that fades as t grows. torch.optim.Adam's defaults are the usual values: \u03b2\u2081 = 0.9, \u03b2\u2082 = 0.999, \u03b5 = 10\u207b\u2078, \u03b7 = 0.001, and the learning rate needs less tuning than with plain SGD."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Why use AdamW rather than Adam with \u21132 regularization, and how do you keep weight decay off bias and normalization parameters?",
+        "a": "Weight decay shrinks the weights slightly at each step (e.g., multiplying them by 0.99). With SGD it's equivalent to \u21132 regularization, so torch.optim.SGD(..., weight_decay=1e-4) is the easy way to get \u21132. With Adam it isn't: the \u21132 gradient gets rescaled by Adam's per-parameter scaling like any other gradient, and Adam with \u21132 tends to generalize worse. AdamW decouples the weight decay from the gradient update and applies it directly to the weights: use torch.optim.AdamW and tune weight_decay.\n\nThe weight_decay argument applies to every parameter, including biases and batch-norm or layer-norm parameters, where it adds little regularization and can hurt training. Parameter groups let you set hyperparameters per group of parameters:\n\n```python\nno_decay = [p for n, p in model.named_parameters() if \"bias\" in n or \"bn\" in n]\ndecay = [p for n, p in model.named_parameters() if \"bias\" not in n and \"bn\" not in n]\noptimizer = torch.optim.AdamW([\n    {\"params\": decay, \"weight_decay\": 1e-4},\n    {\"params\": no_decay, \"weight_decay\": 0.0},  # AdamW's default is 0.01\n], lr=1e-3)\n```\n\nThe name test assumes your batch-norm modules have \"bn\" in their names."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "How do you wire a learning-rate scheduler into a PyTorch training loop, and what's different about ReduceLROnPlateau?",
+        "a": "Wrap the optimizer in a scheduler from torch.optim.lr_scheduler, then call scheduler.step() once per epoch, after that epoch's optimizer steps:\n\n```python\noptimizer = torch.optim.SGD(model.parameters(), lr=0.05)\nscheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)\nfor epoch in range(n_epochs):\n    for X_batch, y_batch in train_loader:\n        ...  # forward pass, loss.backward(), optimizer.step(), optimizer.zero_grad()\n    scheduler.step()\n```\n\nExponentialLR multiplies the learning rate by gamma at each step: with gamma=0.9, it's down to about 35% of its initial value after 10 epochs.\n\nReduceLROnPlateau (performance scheduling) reacts to a metric rather than to the epoch count. To track validation accuracy, create it with mode=\"max\" (the default, \"min\", suits a loss), plus e.g. patience=2 and factor=0.1; evaluate on the validation set at the end of each epoch and call scheduler.step(val_metric). It multiplies the learning rate by factor once the metric has failed to improve for more than patience epochs in a row."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "Compare cosine annealing, cosine annealing with warm restarts, learning-rate warmup, and 1cycle scheduling: what does each do, and when is it useful?",
+        "a": "- Cosine annealing (CosineAnnealingLR): \u03b7_t = \u03b7_min + \u00bd(\u03b7_max \u2212 \u03b7_min)(1 + cos(\u03c0t / T_max)) falls from \u03b7_max at epoch 0 to \u03b7_min at epoch T_max while staying fairly high for most of training. It generally beats exponential decay, but you must pick T_max and \u03b7_min up front.\n- Warm restarts (CosineAnnealingWarmRestarts): repeats the cosine cycle, often doubling its length each round (T_mult=2). Each jump back up helps escape plateaus and local optima.\n- Warmup (e.g., LinearLR with start_factor=0.1, end_factor=1.0, total_iters=3): ramps the rate up over the first few epochs, taming the chaotic start of sensitive models such as RNNs, or of very large batches.\n- 1cycle (OneCycleLR, stepped after every batch): the rate climbs to a peak, comes back down, then drops far lower for the final epochs, while momentum moves the opposite way (e.g., 0.95 \u2192 0.85 \u2192 0.95). It can speed up training considerably."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "How does dropout work during training versus inference, and why does it reduce overfitting?",
+        "a": "At every training step, each neuron except the output neurons is dropped (outputs 0) with probability p, the dropout rate, typically 10% to 50%. Neurons can't co-adapt with their neighbors or lean on a few inputs, so each must be useful on its own, making the network more robust. Equivalently, each step trains one of 2\u1d3a possible weight-sharing subnetworks (for N droppable neurons), and the final network acts like an averaging ensemble of them.\n\nNothing is dropped after training, so each neuron would suddenly get about 1/(1 \u2212 p) times more input than during training. To compensate, the kept inputs are divided by the keep probability 1 \u2212 p during training. nn.Dropout(p=0.2) does exactly this in training mode and passes inputs through unchanged in evaluation mode, so model.train() and model.eval() matter. Since dropout is off at evaluation, compare the validation loss with a training loss measured without dropout."
       }
     ]
   },
@@ -694,7 +1654,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch12-deep-computer-vision-using-cnns",
     "title": "Chapter 12 \u2014 Deep Computer Vision Using Convolutional Neural Networks",
     "sources": [
-      "textbook/hands_on_ml/ch12-deep-computer-vision-using-cnns/exercises.md"
+      "textbook/hands_on_ml/ch12-deep-computer-vision-using-cnns/exercises.md",
+      "textbook/hands_on_ml/ch12-deep-computer-vision-using-cnns/additional_exercises.md"
     ],
     "cards": [
       {
@@ -745,6 +1706,97 @@ window.DECKS = [
         "kind": "exercise",
         "q": "What is the main technical difficulty of semantic segmentation?",
         "a": "The main technical difficulty of semantic segmentation is the fact that a lot of the spatial information gets lost in a CNN as the signal flows through each layer, especially in pooling layers and layers with a stride greater than 1. This spatial information needs to be restored somehow to accurately predict the class of each pixel."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "What is a neuron's receptive field in a CNN, and why do architectures prefer stacks of 3\u00d73 convolutions over one larger kernel?",
+        "a": "A convolutional neuron is connected only to a small patch of the previous layer, its receptive field: with f_h \u00d7 f_w kernels and strides s_h and s_w, the neuron at row i, column j sees rows i\u00b7s_h to i\u00b7s_h + f_h \u2212 1 and columns j\u00b7s_w to j\u00b7s_w + f_w \u2212 1, across all the input feature maps. Stacking layers widens the region of the image each neuron depends on, so low-level features get assembled into larger, more complex patterns higher up.\n\nTwo stacked 3\u00d73 layers (stride 1) see the same 5\u00d75 input patch as one 5\u00d75 layer, with fewer parameters (18C\u00b2 weights instead of 25C\u00b2 for C channels throughout), fewer computations, and an extra nonlinearity; they usually perform better. The exception is the first layer, where a large kernel (e.g., 7\u00d77) with stride 2 shrinks the image cheaply, since the input has only about 3 channels."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Describe nn.Conv2d's main arguments, the input and weight shapes it uses, and how to compute its output height and width.",
+        "a": "nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0), where out_channels is the number of filters (output feature maps), expects inputs shaped [batch, channels, height, width]; images stored channels-last need .permute(0, 3, 1, 2) first.\n\n- The weight has shape [out_channels, in_channels, kernel_height, kernel_width] and the bias [out_channels]. No image size appears (the kernels are shared across positions), so any image at least as large as the kernel works.\n- Each output dimension is \u230a(n + 2p \u2212 k) / s\u230b + 1 for input size n, padding p, kernel size k, and stride s (with no dilation).\n- The default padding=0 (also written \"valid\") shrinks the maps: a 7\u00d77 kernel turns 70\u00d7120 into 64\u00d7114. padding=\"same\" keeps the size but requires stride 1. A 7\u00d77 kernel with stride=2 and padding=3 turns 70\u00d7120 into 35\u00d760.\n- To size the first nn.Linear after flattening, multiply the last maps' channels \u00d7 height \u00d7 width, or use nn.LazyLinear to infer it."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "What do nn.MaxPool2d, nn.AvgPool2d, and nn.AdaptiveAvgPool2d do, and why do modern CNNs use global average pooling before the output layer?",
+        "a": "Pooling layers have no parameters: they aggregate small windows of each channel independently, so the number of channels is unchanged.\n\n- nn.MaxPool2d(kernel_size=2) keeps the max of each 2\u00d72 window. The stride defaults to the kernel size and padding to 0, so it halves the height and width (rounding down), saving computation and memory and adding some invariance to small shifts.\n- nn.AvgPool2d takes the mean instead. Max pooling usually works better: it keeps the strongest activations, gives more translation invariance, and is slightly cheaper.\n- nn.AdaptiveAvgPool2d(output_size=1) picks the kernel size needed to produce the requested output size; with 1, it's global average pooling, the mean of each whole feature map (like X.mean(dim=(2, 3), keepdim=True)).\n\nGlobal average pooling reduces each feature map to a single number, so the head needs no big dense layers over flattened maps: far fewer parameters, less overfitting, and a head that works whatever the input image size."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What are 1\u00d71 convolutional layers good for, given that they can't detect spatial patterns?",
+        "a": "A 1\u00d71 convolution applies the same small dense layer to every pixel's vector of channel values. It's useful in several ways:\n\n- It captures patterns across channels, along the depth dimension.\n- With fewer output than input channels, it acts as a bottleneck layer that reduces dimensionality before an expensive 3\u00d73 or 5\u00d75 convolution, cutting parameters and computation. GoogLeNet's inception modules do this, as do ResNet's deeper residual units (1\u00d71 down to 64 maps, 3\u00d73 with 64 maps, then 1\u00d71 back up to 256).\n- Followed by a 3\u00d73 or 5\u00d75 layer, it forms something like a single, more powerful convolutional layer: a two-layer network swept across the image instead of a single linear filter.\n- It changes the depth cheaply: with stride 2, it reshapes a ResNet skip connection to match the main path, and in a depthwise separable convolution it's the pointwise step that mixes channels."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Why do skip connections (residual learning) make very deep networks such as ResNet trainable?",
+        "a": "A residual unit adds its input x to the output of a small stack of layers, so to model a target function h(x), those layers only need to learn the residual f(x) = h(x) \u2212 x.\n\n- At initialization the weights are small, so a plain stack of layers outputs values close to 0, whereas a residual unit outputs roughly a copy of its input. The network starts close to the identity function, which is often not far from the target, so training is much faster.\n- The signal can cross the whole network through the skip connections, so the network makes progress even while some layers haven't started learning; in backprop, the additions also pass gradients straight down to the lower layers."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Sketch a ResNet-34 residual unit as a PyTorch nn.Module, and say how ResNet-34 stacks these units.",
+        "a": "The main path is conv, BN, ReLU, conv, BN. The skip path is the identity, unless the unit downsamples, in which case a strided 1\u00d71 convolution plus BN reshapes the input. forward() adds the two paths, then applies ReLU:\n\n```python\nclass ResidualUnit(nn.Module):\n    def __init__(self, c_in, c_out, stride=1):\n        super().__init__()\n        self.main = nn.Sequential(\n            nn.Conv2d(c_in, c_out, 3, stride, padding=1, bias=False),\n            nn.BatchNorm2d(c_out), nn.ReLU(),\n            nn.Conv2d(c_out, c_out, 3, padding=1, bias=False),\n            nn.BatchNorm2d(c_out))\n        self.skip = nn.Identity() if stride == 1 else nn.Sequential(\n            nn.Conv2d(c_in, c_out, 1, stride, bias=False), nn.BatchNorm2d(c_out))\n    def forward(self, x):\n        return torch.relu(self.main(x) + self.skip(x))\n```\n\nThe convolutions have no bias because BN follows them. ResNet-34 starts with a 7\u00d77 stride-2 convolution (with BN and ReLU) and a 3\u00d73 stride-2 max pool, then stacks 3 units with 64 feature maps, 4 with 128, 6 with 256, and 3 with 512, using stride 2 in the first unit of each new size. It ends with global average pooling, flattening, and a dense output layer."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How does a depthwise separable convolution work, why is it cheaper than a regular one, and how do you build it in PyTorch?",
+        "a": "A regular convolutional filter looks for spatial and cross-channel patterns jointly. A depthwise separable convolution assumes they can be modeled separately: a depthwise convolution applies one spatial filter per input channel, then a pointwise (1\u00d71) convolution mixes the channels. With k \u00d7 k kernels, that's k\u00b2\u00b7C_in + C_in\u00b7C_out weights instead of k\u00b2\u00b7C_in\u00b7C_out: for 3\u00d73 kernels with 256 channels in and out, about 68K instead of 590K. It uses less memory and computation and often performs better (Xception, MobileNet).\n\nPyTorch has no separable layer, but the groups argument splits the input channels into independent groups, each with its own filters; groups=in_channels, with as many output channels as input channels, gives the depthwise part:\n\n```python\nseparable = nn.Sequential(\n    nn.Conv2d(c_in, c_in, kernel_size=3, padding=1, groups=c_in),  # depthwise\n    nn.Conv2d(c_in, c_out, kernel_size=1),                         # pointwise\n)\n```\n\nAvoid it right after layers with few channels, such as the RGB input."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How do you classify images with a pretrained TorchVision model, from loading the weights to reading off class names?",
+        "a": "Pick a weights enum, build the model with it, and preprocess with the transforms that come with those weights:\n\n```python\nweights = torchvision.models.ConvNeXt_Base_Weights.IMAGENET1K_V1\nmodel = torchvision.models.convnext_base(weights=weights).to(device)\npreprocess = weights.transforms()\nmodel.eval()\nwith torch.no_grad():\n    logits = model(preprocess(images).to(device))\ntop3_logits, top3_ids = logits.topk(k=3, dim=1)\nclass_names = weights.meta[\"categories\"]\nprint([class_names[i] for i in top3_ids[0]])  # top 3 for the first image\n```\n\nThe weights are downloaded once, then cached. weights.transforms() is safer than hand-rolled preprocessing: it resizes and crops images to the size the model expects and standardizes each color channel with the means and standard deviations used in training (ImageNet's). Switch to evaluation mode first, since models start in training mode, and turn off autograd. torchvision.models.list_models() lists the available architectures."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Walk through adapting a pretrained TorchVision classifier to a new set of classes and fine-tuning it.",
+        "a": "1. Preprocess the new images with the transforms that come with the pretrained weights enum (e.g., weights = ConvNeXt_Base_Weights.IMAGENET1K_V1), for instance by passing transform=weights.transforms() to the dataset.\n2. Find the head, e.g. with model.named_children() (a ConvNeXt has features, avgpool, and classifier), and replace its output layer with one sized for your classes. For ConvNeXt-Base: model.classifier[2] = nn.Linear(1024, n_classes).to(device).\n3. Freeze everything except the head, so the new layer's large early errors don't wreck the pretrained weights:\n\n```python\nfor param in model.parameters():\n    param.requires_grad = False\nfor param in model.classifier.parameters():\n    param.requires_grad = True\n```\n\n4. Train for a few epochs: the new head alone often reaches good accuracy.\n5. Unfreeze the pretrained layers (all at once, or gradually from the top), lower the learning rate by about 10\u00d7, and keep training. Parameter groups can give lower layers smaller learning rates than upper ones.\n\nTraining-time augmentation (random flips, small rotations, RandomResizedCrop, ColorJitter), applied before the Normalize step, usually adds accuracy."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "What is the IoU of two bounding boxes, and why train box regression with a GIoU or CIoU loss rather than with IoU itself?",
+        "a": "IoU (intersection over union) = |P \u2229 T| / |P \u222a T|: the overlap area of the predicted box P and the target box T, divided by the area of their union. It ranges from 0 (no overlap) to 1 (perfect match) and is the usual metric for evaluating predicted boxes (torchvision.ops.box_iou).\n\nAs a loss, IoU is 0 whenever the boxes don't overlap, however far apart they are, so its gradient is 0 and can't pull P toward T.\n\n- GIoU = IoU \u2212 |S \u2212 (P \u222a T)| / |S|, where S is the smallest box enclosing both: the penalty grows as the boxes drift apart, giving a useful gradient. The loss is 1 \u2212 GIoU (torchvision.ops.generalized_box_iou_loss).\n- CIoU also accounts for the distance between the box centers (relative to S's diagonal) and for how similar their aspect ratios are. Its loss, 1 \u2212 CIoU (torchvision.ops.complete_box_iou_loss), usually converges faster and gives more accurate boxes than MSE or GIoU."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "Explain non-max suppression: why object detectors need it, and how the algorithm works.",
+        "a": "A detector that makes predictions at many locations, such as a classifier slid across the image or a fully convolutional net that outputs a grid of boxes, typically detects the same object several times at slightly different positions. Non-max suppression keeps only the best box for each object:\n\n1. Discard every box whose objectness score is below a threshold: the model believes there's no object there.\n2. Take the remaining box with the highest objectness score, and discard all other remaining boxes that overlap it heavily (e.g., IoU above 0.6).\n3. Repeat step 2 with the highest-scoring box that hasn't been kept or discarded yet, until none are left.\n\nIn TorchVision, torchvision.ops.nms(boxes, scores, iou_threshold) performs the overlap suppression and returns the indices of the kept boxes, sorted by decreasing score."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "How is mean average precision (mAP) computed for an object detector, and what do mAP@0.5 and COCO's mAP@[.50:.95] mean?",
+        "a": "Start from the precision/recall trade-off. For each recall level r = 0, 0.1, 0.2, \u2026, 1.0, take the maximum precision the model achieves at a recall of at least r, then average these values: that's the average precision (AP) for one class. Taking the max at recall \u2265 r means a stretch of the curve where precision rises again with recall isn't held against the model. The mAP is the mean of the per-class APs.\n\nFor detection, a prediction only counts as correct if its class is right and its box overlaps the ground-truth box enough: requiring an IoU greater than 0.5 gives mAP@0.5 (also written AP50), as in the PASCAL VOC challenge. COCO computes the mAP at IoU thresholds 0.50, 0.55, \u2026, 0.95 and averages them, giving mAP@[.50:.95]. TorchMetrics implements this as MeanAveragePrecision."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "How do transposed convolutions and skip connections help an FCN produce per-pixel predictions for semantic segmentation?",
+        "a": "A pretrained CNN converted to an FCN typically has an overall stride of 32, so its final feature maps are 32 times smaller than the image: far too coarse to label pixels.\n\n- A transposed convolutional layer (nn.ConvTranspose2d) upsamples: it's equivalent to stretching the input by inserting rows and columns of zeros, then running a regular convolution. Its stride sets how much the input is stretched, so a larger stride gives a larger output; e.g., kernel_size=4, stride=2, padding=1 exactly doubles the height and width. Unlike bilinear interpolation (fine only up to \u00d74 or \u00d78), it's trainable, so it can start close to linear interpolation and learn to do better.\n- Upsampling \u00d732 in one step is still imprecise, so skip connections bring back detail from lower, higher-resolution layers: upsample \u00d72 and add the output of a lower layer with that resolution, upsample \u00d72 again and add an even lower layer's output, then upsample \u00d78."
       }
     ]
   },
@@ -752,7 +1804,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch13-processing-sequences-using-rnns-and-cnns",
     "title": "Chapter 13 \u2014 Processing Sequences Using RNNs and CNNs",
     "sources": [
-      "textbook/hands_on_ml/ch13-processing-sequences-using-rnns-and-cnns/exercises.md"
+      "textbook/hands_on_ml/ch13-processing-sequences-using-rnns-and-cnns/exercises.md",
+      "textbook/hands_on_ml/ch13-processing-sequences-using-rnns-and-cnns/additional_exercises.md"
     ],
     "cards": [
       {
@@ -810,6 +1863,90 @@ window.DECKS = [
         "kind": "exercise",
         "q": "Which neural network architecture could you use to classify videos?",
         "a": "To classify videos based on their visual content, one possible architecture could be to take (say) one frame per second, then run every frame through the same convolutional neural network (e.g., a pretrained Xception model, possibly frozen if your dataset is not large), feed the sequence of outputs from the CNN to a sequence-to-vector RNN, and finally run its output through a softmax layer, giving you all the class probabilities. For training you would use cross entropy as the cost function. If you wanted to use the audio for classification as well, you could use a stack of strided 1D convolutional layers to reduce the temporal resolution from thousands of audio frames per second to just one per second (to match the number of images per second), and concatenate the output sequence to the inputs of the sequence-to-vector RNN (along the last dimension). However, transformers and SSMs are much better choices for video classification (see Chapters 15, 16, and Appendix E)."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Write the output equation of a layer of simple recurrent neurons for a whole mini-batch, and explain each term and its shape.",
+        "a": "At time step t, the layer combines the current inputs with its own previous outputs:\n\n\u0176\u208d\u209c\u208e = \u03c6(X\u208d\u209c\u208eW\u2093 + \u0176\u208d\u209c\u208b\u2081\u208eW\u0177 + b)\n\n- X\u208d\u209c\u208e (m \u00d7 n_inputs): the inputs at step t for the m instances in the batch.\n- W\u2093 (n_inputs \u00d7 n_neurons): the weights for the current inputs.\n- \u0176\u208d\u209c\u208b\u2081\u208e (m \u00d7 n_neurons): the outputs at the previous step, all zeros at t = 0.\n- W\u0177 (n_neurons \u00d7 n_neurons): the recurrent weights.\n- b (size n_neurons): the bias vector; \u03c6 is the activation function (tanh by default in nn.RNN).\n\nStacking W\u2093 on top of W\u0177 gives one W of shape (n_inputs + n_neurons) \u00d7 n_neurons, so \u0176\u208d\u209c\u208e = \u03c6([X\u208d\u209c\u208e \u0176\u208d\u209c\u208b\u2081\u208e]W + b), with the two matrices concatenated horizontally. The same W and b are used at every step, and because \u0176\u208d\u209c\u208b\u2081\u208e depends on earlier steps, \u0176\u208d\u209c\u208e depends on all inputs since t = 0."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How does backpropagation through time (BPTT) train a recurrent network?",
+        "a": "It unrolls the RNN through time, making it a feedforward network with one copy of the cell per time step, then runs ordinary backpropagation:\n\n1. Forward pass through the unrolled network, producing an output at each step.\n2. Compute the loss on the output sequence. It may ignore some outputs; a sequence-to-vector model only uses the last one.\n3. Backpropagate. Gradients flow only through the outputs the loss uses, then back through earlier steps via the hidden states.\n4. W and b are shared by every step, so each parameter's gradient sums the contributions from all the steps. One gradient descent step then updates them.\n\nPyTorch's autograd does all this, whether you loop over the time steps yourself or call nn.RNN. The catch: the unrolled network is as deep as the sequence is long, so long sequences train slowly and are prone to unstable gradients."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "What is naive forecasting, and which metrics does the chapter use to compare forecasts against it?",
+        "a": "Naive forecasting copies a past value as the forecast, usually the latest one (tomorrow = today). For the Chicago ridership data, copying the value from 7 days earlier works better because the series has a strong weekly seasonality: it's highly correlated with a one-week-lagged copy of itself (autocorrelation). It needs no training and is often surprisingly hard to beat, so it sets the bar every model must clear.\n\n- MAE (mean absolute error): the average miss, in the series' own units (riders).\n- MAPE (mean absolute percentage error): each error divided by the target value, so it's comparable across series of different scales. With naive forecasts, rail had the lower MAE but the higher MAPE, simply because bus ridership is larger.\n- MSE (mean squared error): penalizes large errors quadratically, so prefer it when big misses hurt disproportionately."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Explain the ARMA forecasting equation, and what ARIMA and SARIMA add to it.",
+        "a": "ARMA forecasts the next value as a weighted sum of recent values plus a weighted sum of recent forecast errors:\n\n\u0177\u208d\u209c\u208e = \u2211 (i = 1 to p) \u03b1\u1d62\u00b7y\u208d\u209c\u208b\u1d62\u208e + \u2211 (i = 1 to q) \u03b8\u1d62\u00b7\u03b5\u208d\u209c\u208b\u1d62\u208e, where \u03b5\u208d\u209c\u208e = y\u208d\u209c\u208e \u2212 \u0177\u208d\u209c\u208e\n\nThe first sum is the autoregressive part (the last p values, learned weights \u03b1\u1d62); the second is the moving-average part (the last q forecast errors, learned weights \u03b8\u1d62). It assumes the series is stationary.\n\n- ARIMA first differences the series d times (the order of integration): one round turns a linear trend into a constant, and d rounds remove polynomial trends up to degree d. It applies ARMA to the result, then adds back what differencing subtracted.\n- SARIMA also models a seasonal pattern of period s: P, D and Q play the roles of p, d and q at lags s, 2s, 3s, and so on (seven hyperparameters in total)."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How do you fit a SARIMA model with statsmodels and forecast the next day, and how does the chapter evaluate and tune it?",
+        "a": "The ARIMA class covers the whole ARMA family. Unlike Scikit-Learn, you pass the data to the constructor, not to fit():\n\n```python\nfrom statsmodels.tsa.arima.model import ARIMA\n\nrail_series = df.loc[\"2019-01-01\":\"2019-05-31\"][\"rail\"].asfreq(\"D\")\nmodel = ARIMA(rail_series,\n              order=(1, 0, 0),              # p, d, q\n              seasonal_order=(0, 1, 1, 7))  # P, D, Q, s\nmodel = model.fit()\ny_pred = model.forecast()  # forecast for the next day\n```\n\nasfreq(\"D\") sets the daily frequency explicitly; otherwise statsmodels has to guess it and warns. One day's forecast proves little, so the chapter loops over every day from March to May 2019, refitting on the data up to that day and forecasting the next one, then computes the MAE over the period (it clearly beats naive forecasting). To pick hyperparameters, grid search small values (p, q, P, Q usually 0 to 2; d and D usually 0 or 1; s is the main seasonal period, 7 here) and keep the lowest MAE. ACF/PACF analysis or the AIC/BIC are more principled alternatives."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Sketch the chapter's TimeSeriesDataset, and explain how it turns one long series into training batches for an RNN.",
+        "a": "Every run of window_length consecutive values becomes an input, and the value right after it becomes the target:\n\n```python\nclass TimeSeriesDataset(torch.utils.data.Dataset):\n    def __init__(self, series, window_length):\n        self.series = series  # shape [length, n_features]\n        self.window_length = window_length\n\n    def __len__(self):\n        return len(self.series) - self.window_length\n\n    def __getitem__(self, idx):\n        end = idx + self.window_length  # first index after the window\n        return self.series[idx:end], self.series[end]\n```\n\nKeep the series 2D even when it's univariate (the chapter uses df[[\"rail\"]] rather than df[\"rail\"]), so a DataLoader yields batches of shape [batch, window_length, n_features], which is what a recurrent layer with batch_first=True expects. The training loader uses shuffle=True, which shuffles whole windows (so batches are closer to IID), not the values inside them. Split the training, validation and test sets across time, and scale the values to roughly the 0\u20131 range (the chapter divides ridership by one million)."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Sketch the chapter's sequence-to-vector forecaster built on nn.RNN, and explain what nn.RNN returns.",
+        "a": "An nn.RNN layer, then a linear head applied to the last time step's output:\n\n```python\nclass SimpleRnnModel(nn.Module):\n    def __init__(self, input_size, hidden_size, output_size):\n        super().__init__()\n        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)\n        self.output = nn.Linear(hidden_size, output_size)\n\n    def forward(self, X):  # X: [batch, time, input_size]\n        outputs, last_state = self.rnn(X)\n        return self.output(outputs[:, -1])\n```\n\nnn.RNN returns two tensors:\n- outputs: the top layer's hidden state at every time step, [batch, time, hidden_size].\n- last_state: each layer's hidden state after the final step, [num_layers, batch, hidden_size]. batch_first doesn't apply to it.\n\nThe head is needed for two reasons: the hidden state has hidden_size values while the target has output_size, and tanh (nn.RNN's default activation) only outputs values between \u22121 and 1, while the targets can exceed 1. nn.RNN starts from a zero hidden state and uses cuDNN's optimized kernels on Nvidia GPUs, so it's much faster than a hand-written loop over time steps."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How can a model trained to forecast one step ahead produce a 14-day forecast, and what's the catch?",
+        "a": "Use it autoregressively: forecast the next value, append the forecast to the inputs as if it had actually happened, and repeat 14 times:\n\n```python\nmodel.eval()\nwith torch.no_grad():\n    X = rail_valid[:56].unsqueeze(dim=0)  # [1, 56, 1]: one 56-day window\n    for step_ahead in range(14):\n        y_pred_one = model(X)             # [1, 1]\n        X = torch.cat([X, y_pred_one.unsqueeze(dim=1)], dim=1)  # add a time step\n    Y_pred = X[0, -14:, 0]                # the 14 forecasts\n```\n\nThe catch is that errors accumulate: each mistake becomes an input to every later forecast, so this only works well for a few steps. The alternative is to train the model to output all 14 values in one shot (each target becomes the vector of the next 14 values), which avoids compounding errors. You can also combine the two: forecast 14 days at once, append them to the inputs, and run the model again for the following 14."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Why train a sequence-to-sequence forecaster when you only use its last time step's forecast, and how does the chapter build its targets?",
+        "a": "At every time step the model forecasts the next 14 values, so the loss gets a term from every step instead of only the last. That means many more error gradients, and they don't have to flow back through as many time steps, which stabilizes and speeds up training. Since it forecasts from inputs of every length, it may also overfit less to the training window length. It isn't cheating, even though the targets overlap the inputs: an RNN is causal, so each output only depends on past inputs. After training, keep only the last step's forecasts, Y_preds[:, -1].\n\nTensor.unfold() builds the per-step targets as sliding windows:\n\n```python\ntarget_period = self.series[idx + 1 : end + 14, 0]  # rail column only\ntarget = target_period.unfold(dimension=0, size=14, step=1)  # [window_length, 14]\n```\n\nThe nn.Linear head is applied to the full [batch, time, hidden] output: it acts on the last dimension, so it runs at every time step and returns [batch, time, 14]."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Write the GRU cell's equations, and explain how the GRU simplifies the LSTM cell.",
+        "a": "For one instance at time step t:\n\n- z\u208d\u209c\u208e = \u03c3(W_xz\u1d40 x\u208d\u209c\u208e + W_hz\u1d40 h\u208d\u209c\u208b\u2081\u208e + b_z)\n- r\u208d\u209c\u208e = \u03c3(W_xr\u1d40 x\u208d\u209c\u208e + W_hr\u1d40 h\u208d\u209c\u208b\u2081\u208e + b_r)\n- g\u208d\u209c\u208e = tanh(W_xg\u1d40 x\u208d\u209c\u208e + W_hg\u1d40 (r\u208d\u209c\u208e \u2297 h\u208d\u209c\u208b\u2081\u208e) + b_g)\n- h\u208d\u209c\u208e = z\u208d\u209c\u208e \u2297 h\u208d\u209c\u208b\u2081\u208e + (1 \u2212 z\u208d\u209c\u208e) \u2297 g\u208d\u209c\u208e\n\nCompared with the LSTM:\n- One state vector h\u208d\u209c\u208e replaces the short-term and long-term states.\n- One gate controller, z\u208d\u209c\u208e, is both the forget and the input gate: near 1 it keeps the old state and ignores the candidate g\u208d\u209c\u208e; near 0 it erases the old content and writes g\u208d\u209c\u208e. Memory is erased exactly where new memory is stored.\n- No output gate: the full state is output at every step. Instead, r\u208d\u209c\u208e controls how much of the previous state the main layer g\u208d\u209c\u208e sees.\n\nIt often performs as well as an LSTM, with fewer parameters. PyTorch provides nn.GRU and, for hand-written loops, nn.GRUCell."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "What input shape does nn.Conv1d expect, and what must you adjust when a Conv1d layer feeds a GRU, as in the chapter's DownsamplingModel?",
+        "a": "nn.Conv1d expects [batch, channels, length], with the features as channels, while a recurrent layer with batch_first=True uses [batch, length, features]. So you permute before and after the convolution:\n\n```python\ndef forward(self, X):\n    Z = X.permute(0, 2, 1)  # [batch, features, time]\n    Z = self.conv(Z)        # nn.Conv1d(input_size, 32, kernel_size=4, stride=2)\n    Z = Z.permute(0, 2, 1)  # back to [batch, time, 32]\n    Z = torch.relu(Z)\n    Z, _states = self.gru(Z)\n    return self.linear(Z)   # 14 forecasts at each remaining time step\n```\n\nThe convolution also changes the sequence length, and the targets must line up with the outputs. With stride 1 and \"same\" padding the length is unchanged, but this layer uses no padding (\"valid\", the default) and a stride of 2, which roughly halves it. Its first output sees input steps 0 to 3, so it must forecast steps 4 to 17: the chapter drops the first 3 per-step targets and keeps every second one after that (target[3::2]). The shorter sequence helps the GRU capture longer patterns, so the window was doubled to 112 days."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "How does a WaveNet-style stack of dilated causal convolutions work, and how does the chapter implement the causal part?",
+        "a": "WaveNet stacks 1D convolutional layers (kernel size 2) whose dilation rate, the spacing between each neuron's inputs, doubles at every layer: 1, 2, 4, 8, and so on. The receptive field doubles too: 2 time steps after the first layer, 4 after the second, 1,024 after ten layers (dilations 1 to 512). Lower layers learn short-term patterns and higher layers long-term ones, with few parameters and no recurrence, so it can handle audio with tens of thousands of steps per second. The paper repeated that 10-layer block three times; the chapter uses dilations (1, 2, 4, 8) twice, each conv followed by ReLU, then an nn.Linear head.\n\nTo stay causal (never peeking at future steps) while keeping the sequence length, each layer pads only on the left, by (kernel_size \u2212 1) \u00d7 dilation:\n\n```python\nclass CausalConv1d(nn.Conv1d):\n    def forward(self, X):\n        padding = (self.kernel_size[0] - 1) * self.dilation[0]\n        X = F.pad(X, (padding, 0))  # (left, right) padding of the time axis\n        return super().forward(X)\n```"
       }
     ]
   },
@@ -817,7 +1954,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch14-nlp-with-rnns-and-attention",
     "title": "Chapter 14 \u2014 Natural Language Processing with RNNs and Attention",
     "sources": [
-      "textbook/hands_on_ml/ch14-nlp-with-rnns-and-attention/exercises.md"
+      "textbook/hands_on_ml/ch14-nlp-with-rnns-and-attention/exercises.md",
+      "textbook/hands_on_ml/ch14-nlp-with-rnns-and-attention/additional_exercises.md"
     ],
     "cards": [
       {
@@ -861,6 +1999,554 @@ window.DECKS = [
         "kind": "exercise",
         "q": "When would you need to use sampled softmax?",
         "a": "Sampled softmax is used when training a classification model when there are many classes (e.g., thousands). It computes an approximation of the cross-entropy loss based on the logit predicted by the model for the correct class, and the predicted logits for a sample of incorrect words. This speeds up training considerably compared to computing the softmax over all logits and then estimating the cross-entropy loss. After training, the model can be used normally, using the regular softmax function to compute all the class probabilities based on all the logits."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Walk through how the chapter builds its Shakespeare char-RNN, from raw text to per-character logits.",
+        "a": "1. Lowercase the text and use the sorted set of its characters as the vocabulary (39 tokens), with char_to_id and id_to_char dictionaries to encode text as ID tensors and decode it back.\n2. A CharDataset cuts the encoded text into 50-character windows; each target is the same window shifted one character ahead, so the model learns to predict the next character at every position. The DataLoader shuffles the windows.\n3. The model chains nn.Embedding(39, 10), nn.GRU(10, 128, num_layers=2, batch_first=True, dropout=0.1) and nn.Linear(128, 39): a logit for every vocabulary character at every time step.\n4. forward() permutes the logits from [batch, time, vocab] to [batch, vocab, time], because nn.CrossEntropyLoss and the Accuracy metric expect the class dimension second.\n5. To predict the next character, take the last time step's logits, Y_logits[0, :, -1], and pick the argmax.\n\nThe window length caps the patterns it can learn at 50 characters."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Why feed a network embeddings rather than raw token IDs or one-hot vectors, and what does nn.Embedding compute?",
+        "a": "Raw IDs mislead the model, which assumes numerically close inputs are similar, although tokens 12 and 13 may be unrelated. One-hot vectors avoid that, but they're as long as the vocabulary and mostly zeros: impractical for tens of thousands of words. An embedding represents each category as a small dense vector (say 300 dimensions instead of 50,000) that's trained with the rest of the model, so useful structure emerges, such as similar words ending up close together (representation learning).\n\nnn.Embedding(num_embeddings, embedding_dim) holds a randomly initialized matrix with one row per category and simply looks rows up: an integer tensor of shape [batch, length] becomes a float tensor of shape [batch, length, embedding_dim]. Mathematically, that's one-hot encoding followed by nn.Linear(bias=False), without the wasted multiplications by zero. If you set padding_idx, that ID maps to a zero vector that receives no gradient updates."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How does the chapter generate text with its char-RNN, and what do temperature, top-k and top-p sampling control?",
+        "a": "Greedy decoding (always appending the most likely next character) tends to repeat the same words. Instead, the chapter samples the next character from the model's predicted distribution with torch.multinomial(), appends it, and repeats:\n\n```python\ndef next_char(model, text, temperature=1):\n    X = encode_text(text).unsqueeze(dim=0).to(device)\n    with torch.no_grad():\n        Y_logits = model(X)  # [1, vocab, time]\n    probas = F.softmax(Y_logits[0, :, -1] / temperature, dim=-1)\n    return id_to_char[torch.multinomial(probas, num_samples=1).item()]\n```\n\nDividing the logits by the temperature reshapes the distribution: near 0 it approaches greedy decoding (precise but repetitive), 1 keeps the model's own probabilities, and high values flatten it toward uniform, eventually producing gibberish. Use low temperatures for rigid text like equations and higher ones for creative text. Top-k sampling only samples among the k most likely tokens, and top-p (nucleus) sampling among the smallest set of top tokens whose total probability exceeds p; both cut off the unlikely tail."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "How does byte pair encoding (BPE) build a subword vocabulary, and how do you train a BPE tokenizer with the Hugging Face Tokenizers library?",
+        "a": "Subword tokens let a model handle rare or unseen words by composing familiar pieces (smartest = smart + est). BPE starts with the training text split into individual characters, then repeatedly adds the most frequent pair of adjacent tokens to the vocabulary as a new token, until the vocabulary reaches the desired size. Training one on the IMDb reviews with the Tokenizers library:\n\n```python\nimport tokenizers\n\nbpe_model = tokenizers.models.BPE(unk_token=\"<unk>\")\nbpe_tokenizer = tokenizers.Tokenizer(bpe_model)\nbpe_tokenizer.pre_tokenizer = tokenizers.pre_tokenizers.Whitespace()\nbpe_trainer = tokenizers.trainers.BpeTrainer(\n    vocab_size=1000, special_tokens=[\"<pad>\", \"<unk>\"])\nbpe_tokenizer.train_from_iterator(train_reviews, bpe_trainer)\n```\n\nThe Whitespace pre-tokenizer first splits the text into words and punctuation (dropping the spaces), so merges happen within those chunks, which speeds up training and gives cleaner tokens. The trainer puts the special tokens first, so padding is ID 0 and unknown is ID 1. Afterward, encode() returns an Encoding with .tokens, .ids, .offsets and .attention_mask, and decode() turns IDs back into text."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Compare byte-level BPE, WordPiece and Unigram LM tokenizers.",
+        "a": "- Byte-level BPE (BBPE): BPE over UTF-8 bytes, via the ByteLevel pre-tokenizer, which also replaces spaces with a special character (\u0120) so decoding can restore them. With all 256 bytes in its vocabulary it never needs an unknown token, even for emojis. Fast, simple and great for multilingual text, but its splits can be awkward. Used by GPT models, Llama and RoBERTa.\n- WordPiece: merges the pair with the highest score instead of the highest count, score(AB) \u221d freq(AB) / (freq(A) \u00b7 freq(B)), which penalizes pairs of individually frequent tokens. Tokens inside a word get a ## prefix. It often yields shorter sequences than BPE. Used by BERT.\n- Unigram LM: starts from a huge vocabulary and repeatedly drops the tokens whose removal least reduces the corpus likelihood, assuming tokens occur independently. Most meaningful tokens and shortest sequences, but slower; well suited to languages that don't separate words with spaces. Used by T5 and ALBERT."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "How do you load and call a pretrained Hugging Face tokenizer, and what does it return?",
+        "a": "Load it by checkpoint name with transformers.AutoTokenizer.from_pretrained(), then call it like a function on a list of strings:\n\n```python\nbert_tokenizer = transformers.AutoTokenizer.from_pretrained(\"bert-base-uncased\")\nencoding = bert_tokenizer(reviews, padding=True, truncation=True,\n                          max_length=500, return_tensors=\"pt\")\nids, mask = encoding[\"input_ids\"], encoding[\"attention_mask\"]  # [batch, longest]\n```\n\nThe result is a dictionary-like BatchEncoding. padding=True pads every text to the longest one in the batch, truncation=True with max_length cuts long texts, and return_tensors=\"pt\" returns PyTorch tensors instead of lists of lists (which needs equal lengths, hence the padding). The attention mask holds 1 for real tokens and 0 for padding. Gotchas: GPT-2's tokenizer has no padding token, so it can't pad; BERT's tokenizer adds [CLS] (ID 101) at the start and [SEP] (ID 102) at the end unless you pass add_special_tokens=False. decode() maps IDs back to text, and transformers.PreTrainedTokenizerFast(tokenizer_object=...) gives a tokenizer you trained with the Tokenizers library this same API."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Walk through the chapter's GRU sentiment classifier for IMDb reviews, from the DataLoader to the loss.",
+        "a": "1. The datasets hold raw text, so tokenization happens per batch in the DataLoader's collate_fn: it receives a list of samples, tokenizes the reviews with the pretrained BERT tokenizer (padding=True, truncation=True, max_length=200, return_tensors=\"pt\"), and returns the BatchEncoding plus a float32 label tensor of shape [batch, 1].\n2. forward() takes that BatchEncoding and embeds encodings[\"input_ids\"] with nn.Embedding(vocab_size, 128, padding_idx=0), so padding tokens become fixed zero vectors.\n3. A 2-layer nn.GRU (hidden size 64, batch_first=True, dropout=0.2) reads the sequence. It's a sequence-to-vector model, so only hidden_states[-1], the top layer's final state, is kept.\n4. nn.Linear(64, 1) turns it into one logit per review (positive for a positive review), trained with nn.BCEWithLogitsLoss.\n\nOne flaw: the GRU still runs through any trailing padding and may forget the review by the end. Feeding it a packed sequence (lengths from the attention mask) makes it stop at each review's real end."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "What does a bidirectional recurrent layer do, and what changes in the code when you set bidirectional=True on nn.GRU?",
+        "a": "It runs two recurrent layers over the same inputs, one left to right and one right to left, and concatenates their outputs at each time step, so every position's representation also reflects what comes after it: to encode \"right\", you need to see whether \"arm\" or \"to speak\" follows. That suits text classification or an encoder, but not a decoder, which must stay causal.\n\nCode changes:\n- The outputs' last dimension doubles to 2 \u00d7 hidden_size.\n- The final hidden states have shape [2 \u00d7 num_layers, batch, hidden_size], ordered layer 1 forward, layer 1 backward, layer 2 forward, and so on, so the top layer's two directions are hidden_states[-2:].\n- The output layer's input size doubles, and the two top states must be concatenated per instance:\n\n```python\ntop_states = hidden_states[-2:].permute(1, 0, 2).reshape(-1, 2 * hidden_dim)\nreturn self.output(top_states)  # self.output = nn.Linear(2 * hidden_dim, 1)\n```"
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Walk through the chapter's options for reusing pretrained parts in the IMDb classifier, from word embeddings up to BERT's contextualized outputs.",
+        "a": "1. Pretrained word embeddings: copy BERT's embedding matrix into your own layer with nn.Embedding.from_pretrained(weights, freeze=True). Freezing stops large early gradients from wrecking them; unfreeze later to fine-tune. The limit: each word gets one vector whatever its context, so \"right\" is encoded the same in \"left and right\" and \"right and wrong\".\n2. Contextualized embeddings, by reusing a whole pretrained language model (the idea behind ELMo and ULMFiT): run BERT and feed its per-token outputs to your GRU, which needn't be bidirectional since these embeddings already looked ahead.\n3. Drop the GRU: during pretraining BERT learned to summarize the text in its first token, [CLS], so feed last_hidden_state[:, 0], or pooler_output (that vector passed through BERT's Linear + tanh pooler), to an nn.Linear head.\n\nFreeze BERT at first with requires_grad_(False). The calls:\n\n```python\nbert = transformers.AutoModel.from_pretrained(\"bert-base-uncased\")\nout = bert(**encodings)  # encodings from the matching tokenizer\nout.last_hidden_state    # [batch, length, 768]; \"last\" means last layer\n```"
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "How do you fine-tune BERT on IMDb with BertForSequenceClassification and the Trainer API?",
+        "a": "BertForSequenceClassification.from_pretrained(\"bert-base-uncased\", num_labels=2) is BERT plus a new, untrained classification head. Hugging Face treats binary classification as 2-class classification: the model outputs two logits, so use cross-entropy and torch.softmax(), not BCE and sigmoid. If you also pass integer class labels, the output includes the loss: cross-entropy here (with num_labels=1 it would be MSE, for regression). The Trainer takes tokenized datasets, not data loaders:\n\n```python\ntok_train = imdb_train_set.map(tokenize_batch, batched=True)\ntok_valid = imdb_valid_set.map(tokenize_batch, batched=True)\nargs = TrainingArguments(output_dir=\"my_imdb_model\", num_train_epochs=2,\n                         eval_strategy=\"epoch\", save_strategy=\"epoch\",\n                         load_best_model_at_end=True,\n                         metric_for_best_model=\"accuracy\")\ntrainer = Trainer(model, args, train_dataset=tok_train, eval_dataset=tok_valid,\n                  compute_metrics=compute_accuracy,\n                  data_collator=DataCollatorWithPadding(bert_tokenizer))\ntrainer.train()\n```\n\nmap() runs the tokenizer (inside tokenize_batch) over batches of examples and adds fields such as input_ids and attention_mask; DataCollatorWithPadding pads each batch; compute_metrics receives an object with predictions and label_ids. The Trainer handles batching, shuffling, evaluation, checkpoints, logging and multi-GPU training."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "What is teacher forcing in an encoder-decoder model, and how does the chapter's nmt_collate_fn set it up?",
+        "a": "During training, the decoder's input at each step is the correct previous target token, whatever it actually predicted. This significantly speeds up training and improves performance: the decoder can process the whole target sequence in a single call, and an early mistake can't derail the rest of the sequence. The first decoder input is a start-of-sequence (SoS) token, and the model learns to finish with an end-of-sequence (EoS) token, so it knows when to stop.\n\nnmt_collate_fn wraps each Spanish target in SoS and EoS, tokenizes it, then offsets the decoder inputs and the labels by one position:\n\n```python\ninputs = NmtPair(src_token_ids, src_mask,\n                 tgt_token_ids[:, :-1], tgt_mask[:, :-1])  # drop last position\nlabels = tgt_token_ids[:, 1:]                             # drop the SoS token\n```\n\nSo the decoder reads \"SoS Me gusta el f\u00fatbol\" and must output \"Me gusta el f\u00fatbol EoS\". At inference there are no targets, so it gets its own previous output instead; scheduled sampling narrows this gap by gradually switching to the model's own outputs during training."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "Sketch the chapter's GRU encoder-decoder translation model, and explain how it translates a sentence at inference time.",
+        "a": "Both languages share one BPE tokenizer and one nn.Embedding (English and Spanish share many words and subwords), and the encoder and decoder are separate 2-layer nn.GRU modules:\n\n```python\ndef forward(self, pair):\n    src_emb = self.embed(pair.src_token_ids)\n    tgt_emb = self.embed(pair.tgt_token_ids)\n    lengths = pair.src_mask.sum(dim=1).cpu()\n    src_packed = pack_padded_sequence(src_emb, lengths=lengths,\n                                      batch_first=True, enforce_sorted=False)\n    _, hidden_states = self.encoder(src_packed)  # final state of each layer\n    outputs, _ = self.decoder(tgt_emb, hidden_states)  # used as initial state\n    return self.output(outputs).permute(0, 2, 1)  # [batch, vocab, time]\n```\n\nThe encoder's final hidden states initialize the decoder, and they're its only information about the source sentence. The decoder inputs aren't packed; instead, nn.CrossEntropyLoss(ignore_index=0) ignores the positions whose target is padding. To translate, decode greedily: feed the source plus just the SoS token, append the most likely next token to the decoder input, and repeat until the model outputs EoS or a maximum length is reached."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "Compare Bahdanau and Luong attention: how does each score an encoder output, and which decoder state does each use?",
+        "a": "Both compute, at each decoder step t, a score e\u208d\u209c,\u1d62\u208e for every encoder output \u0177\u208d\u1d62\u208e, turn the scores into weights with a softmax, \u03b1\u208d\u209c,\u1d62\u208e = exp(e\u208d\u209c,\u1d62\u208e) / \u2211\u1d62\u2032 exp(e\u208d\u209c,\u1d62\u2032\u208e), and return the weighted sum \u2211\u1d62 \u03b1\u208d\u209c,\u1d62\u208e \u0177\u208d\u1d62\u208e. They differ in the scoring:\n\n- Bahdanau (concatenative, or additive) attention concatenates the decoder's previous hidden state with each encoder output and scores the pair with a small dense layer: e\u208d\u209c,\u1d62\u208e = v\u1d40 tanh(W[h\u208d\u209c\u208b\u2081\u208e; \u0177\u208d\u1d62\u208e]). Its output feeds into the decoder's recurrent step.\n- Luong (multiplicative) attention uses the decoder's current state h\u208d\u209c\u208e and a dot product, e\u208d\u209c,\u1d62\u208e = h\u208d\u209c\u208e\u1d40 \u0177\u208d\u1d62\u208e (both vectors must have the same size), or the \"general\" variant h\u208d\u209c\u208e\u1d40 W \u0177\u208d\u1d62\u208e. The attention output is concatenated with h\u208d\u209c\u208e to predict the next token, so attention stays outside the decoder's recurrence, which is simpler and faster.\n\nDot products are cheap on modern hardware and performed better in Luong's experiments, so concatenative attention is now rarely used."
+      },
+      {
+        "key": "a14",
+        "n": 14,
+        "kind": "additional",
+        "q": "Write the chapter's dot-product attention function in PyTorch with its tensor shapes, and explain how the translation model uses it.",
+        "a": "It works like a soft dictionary lookup: compare each query with every key, softmax the similarity scores into weights, and return the weighted sum of the values:\n\n```python\ndef attention(query, key, value):  # [B, Lq, d], [B, Lk, d], [B, Lk, dv]\n    scores = query @ key.transpose(1, 2)     # [B, Lq, Lk]\n    weights = torch.softmax(scores, dim=-1)  # each row sums to 1\n    return weights @ value                   # [B, Lq, dv]\n```\n\ntorch.bmm() computes the same batched matrix products for 3D tensors, a bit faster. In the translation model, the queries are the decoder's outputs (equal to its top layer's hidden states), and the keys and values are both the encoder's outputs. Because the encoder read a packed sequence, its outputs are packed too, so they first go through pad_packed_sequence(). The attention output is concatenated with the decoder outputs along the last dimension, so the output layer's input size doubles to 2 \u00d7 hidden_dim. Two limitations: this version doesn't mask the padding tokens in the source, and it computes Lq \u00d7 Lk weights, which grows quadratically with sentence length."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-ch15-transformers-for-nlp-and-chatbots",
+    "title": "Chapter 15 \u2014 Transformers for Natural Language Processing and Chatbots",
+    "sources": [
+      "textbook/hands_on_ml/ch15-transformers-for-nlp-and-chatbots/exercises.md",
+      "textbook/hands_on_ml/ch15-transformers-for-nlp-and-chatbots/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "e1",
+        "n": 1,
+        "kind": "exercise",
+        "q": "What is the most important layer in the Transformer architecture? What is its purpose?",
+        "a": "The most important layer is the multi-head attention (MHA) layer. Every other layer (embeddings, dense layers, layer norm) processes each token independently, so MHA is where tokens exchange information: its purpose is to update each token's representation based on the tokens it attends to, turning vague token embeddings into contextualized ones. For example, in \"I like soccer\", attending to \"I\" helps the model infer that \"like\" is a verb meaning \"to be fond of\". The encoder uses MHA for self-attention over the whole input sentence, the decoder uses a masked (causal) version in which each token only attends to itself and earlier tokens, and the decoder's cross-attention layers let each target token attend to the encoder's outputs (e.g., \"el\" attending to \"soccer\" before \"f\u00fatbol\" is predicted). Each head computes scaled dot-product attention, softmax(QK\u1d40 / \u221ad_k)\u00b7V, on its own linear projections of the queries, keys and values, so different heads can focus on different characteristics of the tokens (such as tense or meaning); their outputs are concatenated and linearly projected. Since attention connects all positions directly and in parallel, transformers capture long-range patterns much better than RNNs and are easy to parallelize."
+      },
+      {
+        "key": "e2",
+        "n": 2,
+        "kind": "exercise",
+        "q": "Why does the Transformer architecture need positional encodings?",
+        "a": "Because all of the Transformer's layers are position-agnostic: attention layers and dense layers treat all positions the same way (unlike recurrent or convolutional layers), so when a layer processes a token, it has no idea where that token is located in the sentence or relative to the other tokens. Without positional information, the model would see each sentence as a bag of tokens (in an encoder, shuffling the input tokens would just shuffle the outputs), yet word order matters for meaning. So we give the model positional encodings: dense vectors representing each position, added to the token embeddings (the ith positional encoding is added to the embedding of the ith token of every sentence). They can be trainable, e.g., an nn.Embedding layer or an nn.Parameter matrix (as in BERT), or fixed, like the sine/cosine scheme proposed in the original paper, which doesn't really perform better than trainable ones. Newer approaches such as relative position bias (RPB), rotary positional encoding (RoPE) and attention with linear bias (ALiBi) generally perform better."
+      },
+      {
+        "key": "e3",
+        "n": 3,
+        "kind": "exercise",
+        "q": "What tasks are encoder-only models best at? How about decoder-only models? And encoder-decoder models?",
+        "a": "- Encoder-only models (e.g., BERT) are best at natural language understanding tasks: text classification (e.g., sentiment analysis), token classification (e.g., named entity recognition), sentence-pair tasks (e.g., natural language inference or paraphrase detection), multiple-choice and extractive question answering, and text embeddings for semantic search, clustering or similarity. They read the whole input bidirectionally in a single pass, so they're fast and often match much larger models on these tasks. But they're not used for text generation, since every new token would require recomputing everything.\n- Decoder-only models (e.g., GPT) are best at text generation: auto-completion, creative writing, code generation, free-form question answering, some math and logical reasoning, and chatbots. Because they're causal, they can cache their previous state and generate efficiently one token at a time, and large ones can also handle classification, translation or summarization through zero-shot or few-shot prompting.\n- Encoder-decoder models (e.g., the original Transformer, T5, BART) are best at turning an input text into a new output text, especially translation and summarization: the bidirectional encoder builds excellent contextual embeddings of the source text for the decoder, typically giving better results than a decoder-only model of similar size. This architecture is also common for vision tasks with multiple outputs (e.g., object detection) and for multimodal models."
+      },
+      {
+        "key": "e4",
+        "n": 4,
+        "kind": "exercise",
+        "q": "What is the most important technique used to pretrain BERT?",
+        "a": "Masked language modeling (MLM), a self-supervised \"fill in the blanks\" (cloze) task: each input token has a 15% probability of being selected, and the model must predict the original selected tokens from their context, with the loss computed only on those positions. Most selected tokens are replaced with a [MASK] token, but 10% are replaced with a random token and 10% are left unchanged. The random tokens force the model to perform well even when there are no mask tokens, which is the case in most downstream tasks, and the unchanged tokens encourage it to pay attention to the actual token at the predicted position instead of learning to ignore it. Since the encoder sees the whole sentence at once, MLM lets BERT learn deep bidirectional representations from a large unlabeled corpus. BERT was also pretrained with next sentence prediction (NSP), but it turned out not to help much, so most later models dropped it. RoBERTa also showed the benefit of dynamic masking, where each text is masked differently at each epoch rather than once before training."
+      },
+      {
+        "key": "e5",
+        "n": 5,
+        "kind": "exercise",
+        "q": "Can you name four BERT variants and explain their main benefits?",
+        "a": "Here are five popular ones:\n- RoBERTa (Facebook AI): better performance than BERT across the board, mostly thanks to pretraining longer on more data, using dynamic masking (tokens are masked on the fly, differently at each epoch) and dropping NSP.\n- DistilBERT (Hugging Face): about 40% smaller and 60% faster than BERT while retaining about 97% of its performance, great for low-resource devices, low latency or quick fine-tuning. It was distilled from BERT: trained on the teacher's temperature-softened predictions, plus the MLM loss and a loss aligning its final hidden states with the teacher's.\n- ALBERT (Google): shares the same weights across all encoder layers and factorizes the embedding matrix (small embeddings projected up by a linear layer), making it much smaller than BERT (though not faster), which is handy when memory is limited. It also replaced NSP with sentence order prediction, which gave better sentence embeddings.\n- ELECTRA (Google): pretrained with replaced token detection: a small generator fills in masked tokens and the main model (the discriminator) must spot which tokens were replaced. Since it learns from every token, not just the masked ones, it's more sample-efficient and converges faster, matching larger BERT models.\n- DeBERTa (Microsoft): uses relative positional embeddings inside every attention layer (disentangled attention) instead of absolute positional embeddings, beating the state of the art on many NLU tasks; DeBERTaV3 adds ELECTRA-style pretraining."
+      },
+      {
+        "key": "e6",
+        "n": 6,
+        "kind": "exercise",
+        "q": "What is the main task used to pretrain GPT and its successors?",
+        "a": "Next token prediction (NTP), also called causal language modeling: the model is fed sequences of text from a huge unlabeled corpus and trained to predict the next token at every position, with a causal mask so each position can only attend to the tokens before it. For example, given \"Happy birthday\", it should predict \"birthday to\": \"birthday\" after \"Happy\", and \"to\" after \"birthday\". This is self-supervised, since the targets are just the inputs shifted by one token, and it's simple and efficient: GPT-1 was trained on 512-token sequences sampled from a corpus of books, with no padding or special tokens at all, and every position provides a training signal. A model pretrained this way can generate text one token at a time, appending each predicted token to its input, which is why GPT-2, GPT-3 and today's base LLMs are typically pretrained with NTP before being fine-tuned for chat and instruction following."
+      },
+      {
+        "key": "e7",
+        "n": 7,
+        "kind": "exercise",
+        "q": "The generate() method has many arguments, including do_sample, top_k, top_p, temperature, and num_beams. What do these five arguments do?",
+        "a": "- do_sample: by default (False), generate() uses greedy decoding, always picking the most likely next token. That's fine for structured outputs or question answering, but for creative writing it often makes the model repeat itself or get stuck in a loop. With do_sample=True, each token is sampled randomly according to the model's estimated probabilities instead.\n- temperature (default 1): the logits are divided by the temperature before the softmax. A lower temperature makes the output more predictable (close to 0, sampling approaches greedy decoding), while a higher one makes it more diverse, and eventually incoherent.\n- top_k: only sample from the k most likely next tokens.\n- top_p (nucleus sampling): only sample from the smallest set of most likely tokens whose total probability is at least top_p. It's often preferred over top-k because it adapts to the distribution: after \"The capital city of France is\", the set contains essentially just \"Paris\", while after \"My favorite city is\", it includes many plausible cities, whereas top-k would sometimes allow bad tokens in the first case and exclude good ones in the second.\n- num_beams: the beam width for beam search (default 1, meaning no beam search). Beam search keeps the num_beams most likely partial sequences, extends each by one token at every step, and keeps the best ones, so an early mistake can still be corrected later.\n\nNote that temperature, top_k and top_p only have an effect when sampling (do_sample=True)."
+      },
+      {
+        "key": "e8",
+        "n": 8,
+        "kind": "exercise",
+        "q": "What is prompt engineering? Can you describe five prompt engineering techniques?",
+        "a": "Prompt engineering is the art of crafting and tweaking a prompt until the model reliably behaves the way you want. LLMs are very sensitive to phrasing, so it's worth experimenting, even programmatically by evaluating many prompt variants. Five techniques:\n1. Clear, well-framed instructions: choose your words carefully, add context, give the model a persona to imitate (e.g., \"You are a friendly real-estate expert\"), specify the output format and style, and list pitfalls to avoid.\n2. Few-shot prompting (in-context learning): include a few examples of the task in the prompt, such as \"Capital city of France = Paris\" before asking about another country, so the model infers the task and the expected format.\n3. Prompt chaining: break a complex task into subtasks, with one prompt each, feeding each output into the next prompt (e.g., write a lesson outline, then check and complete it, then write the lesson from it).\n4. Chain-of-thought prompting: ask the model to reason step by step, or show it step-by-step example answers. For more reliability, run it several times and keep the most frequent answer (self-consistency); tree-of-thoughts goes further by exploring and evaluating several reasoning branches, with backtracking, at a high cost.\n5. Retrieval augmented generation (RAG): retrieve relevant, reliable information (e.g., from a database or search engine) and inject it into the prompt, which greatly reduces hallucinations.\n\nOther options include automatic prompt optimization (e.g., prompt tuning), multi-agent debate, self-critique and refinement, and having an LLM write prompts for another model."
+      },
+      {
+        "key": "e9",
+        "n": 9,
+        "kind": "exercise",
+        "q": "What are the main steps to build a chatbot, starting from a pretrained decoder-only model?",
+        "a": "1. Supervised fine-tuning (SFT): fine-tune the base model on a curated dataset of instructions and responses, conversations, question/answer pairs, code and math problems with solutions, role-play, and safety-aligned answers (e.g., declining to explain how to rob a bank). This is regular next token prediction, usually with loss masking, meaning the loss is only computed on the answer tokens. Multi-turn conversations with role tags (e.g., \"User:\" and \"Assistant:\", or the ChatML format) teach the model to hold a conversation. The result is a conversational, instruction-following model.\n2. Fine-tuning with human feedback: human raters compare or rank the model's answers, and the model is fine-tuned to produce the preferred ones. RLHF trains a reward model on these preferences, then optimizes the LLM with an RL algorithm (PPO) while keeping it close to the original model; DPO is a simpler, more stable alternative that trains directly on (prompt, chosen answer, rejected answer) triplets against a frozen reference model. Libraries such as TRL implement SFT, RLHF and DPO.\n3. Deployment in a full chatbot system: a user interface (web or app) and possibly an API endpoint, storage of the conversations, and an orchestrator that coordinates tools such as a calculator, web search, retrieval augmented generation or long-term memory (e.g., via MCP servers).\n\nAlternatively, you can skip the fine-tuning steps by downloading a model that's already fine-tuned for chat (e.g., Mistral-7B-Instruct), or use a conversational model through an API."
+      },
+      {
+        "key": "e10",
+        "n": 10,
+        "kind": "exercise",
+        "q": "How can a chatbot use tools like a calculator or web search?",
+        "a": "Through an orchestrator, the component of the chatbot system that sits between the user and the model and coordinates the tools. There are two main approaches:\n- The orchestrator decides: for example, it detects a math expression in the user's prompt, evaluates it with a calculator, and adds the result to the prompt (e.g., \"System: Calculator result = 42\") before calling the model, which then only has to phrase the answer. If the user mentions a URL, it can fetch the web page and inject its text into the prompt, or a summary of it, or just its most relevant chunks, found by comparing the chunks' embeddings with the prompt's embedding.\n- The model decides (tool augmentation, or function calling): the model is fine-tuned to emit a special tool invocation when needed, such as \"[calculator_tool] 525.6 \u00d7 315 / 3942 [/calculator_tool]\", \"[search_tool] What is the population of Ottawa? [/search_tool]\", or a JSON message. The orchestrator detects it and runs the tool (e.g., a web search whose top results are fetched and summarized). It can then substitute the result directly into the model's output, or feed it back to the model to write the final answer: this costs an extra call, but the model gets to see the result, so it can comment on it and cite its sources.\n\nThe same pattern generalizes to retrieval augmented generation over private data, long-term memory, code interpreters and many other tools, and MCP standardizes how the orchestrator connects to such tool servers."
+      },
+      {
+        "key": "e11",
+        "n": 11,
+        "kind": "exercise",
+        "q": "What is MCP used for?",
+        "a": "The Model Context Protocol (MCP) is an open standard, proposed by Anthropic, for connecting AI systems to external tools and resources, such as file systems, email, calendars, weather or navigation services, each exposed by an MCP server. It doesn't specify anything about the LLM itself: the LLM orchestrator (the MCP host) detects when the LLM wants to use a tool (e.g., because it outputs a JSON request as instructed in its system prompt), sends an MCP-compliant JSON request to the appropriate MCP server through an MCP client, then feeds the server's response back to the LLM so it can compose its answer (e.g., \"It will be sunny today in Paris\"). Compared with a plain REST or gRPC API, MCP connections are long-lived, stateful and bidirectional, and MCP includes an AI-friendly discovery mechanism: the client can ask a server for a rich textual description of what it does and exactly how to use its functions and parameters (a self-documenting API for AIs), and the server can ask about the client's capabilities, such as displaying images or streaming output. As a result, connecting an LLM to a new service mostly boils down to adding the server to the orchestrator's configuration and telling the LLM about it."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Walk through the forward pass of a from-scratch multi-head attention module, giving the tensor shape at each step.",
+        "a": "Each head computes scaled dot-product attention, softmax(QK\u1d40 / \u221ad)\u00b7V, and all heads run at once as batched matrix products (h heads of size d = embed_dim / h, batch size B):\n\n1. Project the query, key and value with three Linear layers.\n2. split_heads() views each [B, L, h\u00b7d] tensor as [B, L, h, d] and transposes it to [B, h, L, d]. The @ operator only multiplies the last two dimensions, so B and h act as batch dimensions.\n3. scores = q @ k.transpose(2, 3) / \u221ad, shape [B, h, Lq, Lk]. Dividing by \u221ad keeps the softmax from saturating, which would shrink gradients. Masked positions are set to \u2212\u221e.\n4. Softmax over the last dimension makes each row sum to 1 (\u2212\u221e gives 0); weights @ v gives [B, h, Lq, d].\n5. Transpose to [B, Lq, h, d] and reshape to [B, Lq, h\u00b7d], concatenating the heads, then apply the output Linear layer."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "Which masks does nn.Transformer need when you train a translation model, and how do you build them?",
+        "a": "Four boolean masks, in which True means \"don't attend to this key\":\n- src_key_padding_mask [B, Ls]: hides source padding from the encoder's self-attention.\n- memory_key_padding_mask [B, Ls]: the same mask, hiding source padding from the decoder's cross-attention over the encoder outputs.\n- tgt_key_padding_mask [B, Lt]: hides target padding.\n- tgt_mask [Lt, Lt]: the causal mask for the decoder's masked self-attention, True above the main diagonal so each position sees only itself and earlier tokens.\n\nTokenizers return attention masks with 1 for real tokens, so invert them with ~mask.bool(). Build the causal mask with torch.triu(torch.full((L, L), True), diagonal=1) or nn.Transformer.generate_square_subsequent_mask(L, dtype=torch.bool). Create the module with batch_first=True if your tensors are [B, L, E], since the default is False.\n\nThe causal mask is also how you get a GPT-style model: call nn.TransformerEncoder with a causal mask. nn.TransformerDecoder won't do, because its cross-attention layers can't easily be removed."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How do you adapt a pretrained BERT model to sentence classification, token classification, multiple-choice questions and extractive question answering?",
+        "a": "Add a small head on the encoder's outputs and fine-tune:\n- Sentence classification (e.g., sentiment): a new classification head on the [CLS] token's output. Sentence-pair tasks such as natural language inference work the same way, with the sentences separated by [SEP] and told apart by segment embeddings.\n- Token classification (e.g., named entity recognition): a classification head applied to every token's output.\n- Multiple choice: run BERT once per candidate answer (question in segment 0, answer in segment 1). A one-unit linear layer turns each [CLS] output into a score, and cross-entropy over the candidates' scores trains it.\n- Extractive QA: with the question in segment 0 and the context in segment 1, a two-unit linear layer outputs a start score and an end score for every token. The predicted answer is the span i \u2264 j that maximizes start\u1d62 + end\u2c7c, up to a maximum answer length."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Why is a sentence-embedding model like SBERT better than plain BERT for finding similar sentences, and how do you use one?",
+        "a": "BERT can be fine-tuned to score how similar two sentences are, but it must read each pair together, so finding the most similar pair among N sentences takes O(N\u00b2) forward passes, which can take hours. SBERT is a BERT variant fine-tuned to produce good sentence embeddings: encode each sentence once, then compare embeddings with a cheap measure such as cosine similarity (from \u22121 to +1). That takes seconds. With the Sentence Transformers library:\n\n```python\nfrom sentence_transformers import SentenceTransformer\n\nmodel = SentenceTransformer(\"all-MiniLM-L6-v2\")  # small and fast\nembeddings = model.encode(sentences, convert_to_tensor=True)\nsimilarities = model.similarity(embeddings, embeddings)  # [N, N] matrix\n```\n\nThe same embeddings power semantic search (embed the documents once, embed each query, return the nearest documents, often from a vector database), text clustering (e.g., k-means or HDBSCAN on the embeddings), and reranking an existing search engine's results."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How do you load a pretrained causal language model with the Transformers library and generate text from a prompt?",
+        "a": "Load the tokenizer and the model, then wrap tokenization, generate() and decoding in a helper:\n\n```python\nfrom transformers import AutoTokenizer, AutoModelForCausalLM\n\ntokenizer = AutoTokenizer.from_pretrained(\"gpt2\")\nmodel = AutoModelForCausalLM.from_pretrained(\"gpt2\", device_map=\"auto\", dtype=\"auto\")\n\ndef generate(prompt, max_new_tokens=50, **kwargs):\n    inputs = tokenizer(prompt, return_tensors=\"pt\").to(model.device)\n    outputs = model.generate(**inputs, max_new_tokens=max_new_tokens,\n                             pad_token_id=tokenizer.eos_token_id, **kwargs)\n    return tokenizer.decode(outputs[0], skip_special_tokens=True)\n```\n\n- AutoModelForCausalLM picks the right class for the checkpoint (GPT2LMHeadModel here).\n- device_map=\"auto\" places the model on the best available device, even sharding it across GPUs if it's too big for one.\n- dtype=\"auto\" picks the weight type from the checkpoint and your hardware, typically 16-bit floats on a modern GPU: half the memory, and faster.\n- GPT-2 was pretrained without a padding token, so the end-of-sequence token is reused for padding. Decoder-only models are often padded on the left, since new tokens get appended on the right.\n- The output starts with the prompt, so slice it off if you only want the continuation."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "State the DPO loss and explain its terms. Why is DPO often preferred to RLHF?",
+        "a": "For a prompt x with a human-preferred (chosen) answer y_c and a rejected answer y_r:\n\nJ(\u03b8) = \u2212log \u03c3(\u03b2\u00b7[\u03b4(y_c) \u2212 \u03b4(y_r)]), where \u03b4(y) = log p_\u03b8(y | x) \u2212 log p_ref(y | x)\n\n- p_\u03b8 is the model being fine-tuned; p_ref is a frozen reference model, usually the SFT model you started from.\n- \u03b4(y) measures how much more likely the model makes answer y than the reference does.\n- \u03c3 is the sigmoid, so the loss falls as the chosen answer gains probability relative to the rejected one.\n- \u03b2 (typically 0.1 to 0.5) sets the sigmoid's steepness: a high \u03b2 keeps the model close to the reference, a low \u03b2 follows the preferences more.\n\nIt's roughly equivalent to RLHF but needs no separate reward model and no reinforcement learning (PPO), so it's simpler, more stable and more data efficient. Compute log \u03c3 with F.logsigmoid() for numerical stability."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How do you compute the log-probability that a causal language model assigns to each sequence in a padded batch?",
+        "a": "The logits at position t predict token t + 1, so align logits[:, :-1] with the targets input_ids[:, 1:]. You could apply F.log_softmax() and pick each target's value with torch.gather(), but F.cross_entropy() does both in one step:\n\n```python\nlogits = model(**encodings).logits  # [B, L, vocab_size]\ntargets = encodings.input_ids[:, 1:]  # the next token at each position\ntoken_log_probas = -F.cross_entropy(\n    logits[:, :-1].permute(0, 2, 1), targets, reduction=\"none\")  # [B, L-1]\nmask = encodings.attention_mask\nvalid = mask[:, :-1] * mask[:, 1:]  # skip pairs involving padding\nseq_log_probas = (token_log_probas * valid).sum(dim=1)  # [B]\n```\n\n- permute(0, 2, 1) because cross_entropy expects the class dimension at index 1.\n- reduction=\"none\" keeps one value per token instead of the mean.\n- The minus sign turns the negative log-likelihood back into a log-probability.\n- Summing gives the log-probability of the whole sequence. For DPO you can score prompt plus answer instead of the answer alone, since log p(xy) = log p(x) + log p(y | x) and the log p(x) terms cancel between the chosen and rejected answers."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How can you guarantee that an LLM's output is valid JSON, or follows any other grammar?",
+        "a": "Post-processing the output to fix syntax or schema errors (an extra bracket, a missing field, a string instead of an integer) isn't fully reliable. Structured generation constrains the sampling itself: at each step, work out which tokens could legally come next given the text so far, and pick the one the model prefers among those only, even if it would rather output an illegal token. For example, if the schema says name is a string, then after {\"name\": the only legal continuations are a space or an opening quote.\n\nWith the Transformers library, subclass transformers.LogitsProcessor: its __call__(input_ids, scores) method receives the logits just before each token is chosen and can set the logits of all invalid tokens to \u2212\u221e. Pass it to generate() through the logits_processor argument (in a LogitsProcessorList). Since this is low-level, libraries such as Outlines or Guidance handle the grammar and token bookkeeping for you."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "What does it mean that T5 frames every NLP task as text-to-text, and how was it pretrained?",
+        "a": "T5 is an encoder-decoder model whose inputs and outputs are always plain text, with a prefix in the input saying which task to perform: \"translate English to Spanish: I like soccer\" should produce \"me gusta el f\u00fatbol\", \"summarize:\" followed by a paragraph should produce its summary, and for classification the model writes the class name as text. One architecture, one training objective and one decoding procedure cover every task, which makes the model easy to pretrain on many tasks and just as easy to use. Listing candidate classes in the prompt even enables zero-shot classification.\n\nT5 was pretrained with masked span corruption: like BERT's masked language modeling, except that whole contiguous spans of tokens are masked and the model must generate the missing text. BART, another encoder-decoder, uses a broader denoising objective (masked, deleted or inserted tokens, shuffled sentences), and it's particularly effective for text generation and summarization."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-ch16-vision-and-multimodal-transformers",
+    "title": "Chapter 16 \u2014 Vision and Multimodal Transformers",
+    "sources": [
+      "textbook/hands_on_ml/ch16-vision-and-multimodal-transformers/exercises.md",
+      "textbook/hands_on_ml/ch16-vision-and-multimodal-transformers/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "e1",
+        "n": 1,
+        "kind": "exercise",
+        "q": "Can you describe the original ViT\u2019s architecture? Why does it matter?",
+        "a": "The original vision transformer (ViT) treats an image like a sentence, with patches playing the role of words (\"An Image Is Worth 16 \u00d7 16 Words\"):\n1. The image is chopped into 16 \u00d7 16 patches: a 224 \u00d7 224 RGB image gives a 14 \u00d7 14 grid of 196 patches.\n2. Each patch is flattened into a 16 \u00d7 16 \u00d7 3 = 768-dimensional vector and linearly projected to the model's embedding size (a Conv2d layer with kernel size and stride both equal to 16 does exactly this).\n3. A trainable class token is prepended to the sequence, and learnable positional embeddings are added.\n4. The sequence goes through a regular encoder-only transformer, and a classification head on top of the class token's output makes the prediction, just like BERT-style classification.\n\nIt matters because it was the first vision transformer without any CNN, and it showed that a plain transformer could beat the state of the art on ImageNet classification, as long as it was trained on enough data (the authors used 300 million extra images, because transformers lack the inductive biases of CNNs). It kicked off a wave of vision transformers (DeiT, PVT, Swin, DINO, and more), and it showed that images can be tokenized and processed just like text, paving the way for multimodal transformers."
+      },
+      {
+        "key": "e2",
+        "n": 2,
+        "kind": "exercise",
+        "q": "What tasks are regular ViTs (meaning nonhierarchical) best used for? What are their limitations?",
+        "a": "Regular ViTs, such as the original ViT and DeiT, are best used for image classification, and more generally for producing a global representation of an image from the class token's output (e.g., a ViT can serve as CLIP's image encoder). Their main limitations are:\n- They output a single-scale, coarse sequence of patch tokens (e.g., one per 16 \u00d7 16 patch) rather than multiscale feature maps, so they're not well suited to dense prediction tasks such as object detection or semantic segmentation, which need fine-grained spatial resolution.\n- Attention is quadratic in the number of patches: doubling the image's width and height quadruples the number of patches and multiplies the computation by 16. So high-resolution images must be downsampled first, which can hurt accuracy, especially for dense prediction tasks.\n- They have fewer inductive biases than CNNs (e.g., locality and translation invariance), so they need a lot of training data (the original ViT used 300 million extra images) unless you use tricks such as distillation (as in DeiT) or self-supervised pretraining, or start from a pretrained model."
+      },
+      {
+        "key": "e3",
+        "n": 3,
+        "kind": "exercise",
+        "q": "What is the main innovation in DeiT? Is this idea generalizable to other architectures?",
+        "a": "DeiT (data-efficient image transformer) keeps the original ViT architecture but trains it using knowledge distillation from a strong, frozen teacher: a state-of-the-art CNN. Its main innovation is the distillation token: a trainable token added to the input sequence alongside the class token, whose output goes through its own classification head. The class token's head is trained with the cross-entropy on the true labels (hard targets), while the distillation head is trained with the cross-entropy on the teacher's predictions (soft targets), and the final loss is a weighted sum of both (typically with equal weights). This allowed DeiT to reach competitive results on ImageNet without any extra training data, whereas the original ViT needed hundreds of millions of extra images.\n\nYes, the idea is generalizable. Distillation itself works for all kinds of models and tasks (e.g., DistilBERT in NLP), and the teacher doesn't even need to share the student's architecture: in DeiT, a CNN teaches a transformer. The distillation token trick can be applied to any transformer that uses a class token, since it only requires adding one token and one head."
+      },
+      {
+        "key": "e4",
+        "n": 4,
+        "kind": "exercise",
+        "q": "What are some examples of hierarchical ViTs? What kind of tasks are they good for?",
+        "a": "Examples include the Pyramid Vision Transformer (PVT), the Swin Transformer and Swin v2, as well as Twins-SVT, FocalNet, MaxViT and InternImage. Like a CNN, a hierarchical ViT processes the image into a pyramid of gradually smaller but deeper (semantically richer) feature maps: it starts with small patches (e.g., 4 \u00d7 4 pixels) to get a high spatial resolution, then works on coarser and coarser tokens with more channels at each level. For example, given a 256 \u00d7 192 image, PVT outputs 64 \u00d7 48, 32 \u00d7 24, 16 \u00d7 12 and 8 \u00d7 6 feature maps with 64, 128, 320 and 512 channels. To cope with the many small patches, these models use cheaper attention variants, such as PVT's spatial reduction attention or Swin's shifted-window attention.\n\nThese multiscale feature maps make hierarchical ViTs great for dense prediction tasks such as object detection, semantic segmentation and instance segmentation: they can replace the CNN backbone of existing architectures, for example in an FCN-style segmentation model or a Mask R-CNN. They also do well at image classification, and Swin's linear scaling makes it well suited to large, high-resolution images."
+      },
+      {
+        "key": "e5",
+        "n": 5,
+        "kind": "exercise",
+        "q": "How do PVTs and Swin Transformers reduce the computational cost of processing high-resolution images?",
+        "a": "Both use small patches to preserve fine spatial resolution, which means many tokens, so regular multi-head attention, which is quadratic in the number of tokens, would be far too expensive. They tackle this differently:\n- PVT uses spatial reduction attention (SRA): the queries keep their full resolution, but the keys and values are first spatially downsampled by a factor R in each dimension (usually with a strided convolutional layer followed by layer norm), which divides the number of attention scores by R\u00b2. At PVT's first level, the 3,072 tokens of a 64 \u00d7 48 grid attend to keys and values reduced 8 times horizontally and vertically, to an 8 \u00d7 6 grid of 48 tokens: that's 3,072 \u00d7 48 = 147,456 scores instead of over 9 million, 64 times fewer, with no loss of output resolution. The cost is still quadratic in the image area, though.\n- Swin uses window-based multi-head self-attention (W-MSA): each patch only attends to the patches within the same small, non-overlapping window (e.g., 7 \u00d7 7 = 49 patches), so the cost grows linearly with the image area: doubling the width and height multiplies it by 4 instead of 16. To let information flow between windows, every other layer uses shifted windows (SW-MSA), offset by half a window, which is implemented efficiently by cyclically shifting the image and using attention masks.\n\nIn both cases, the pyramid structure also reduces the number of tokens at each deeper level."
+      },
+      {
+        "key": "e6",
+        "n": 6,
+        "kind": "exercise",
+        "q": "How does DINO work? What changed in DINOv2? When would you want to use DINOv2?",
+        "a": "DINO (self-distillation with no labels) is a self-supervised technique for learning image representations. During training, the model is duplicated into a student and a teacher: only the student is trained by gradient descent, while the teacher's weights are an exponential moving average of the student's (a momentum teacher). Each image is augmented differently for each of them (color jitter, grayscale, Gaussian blur, flips, and so on): the teacher sees the full image with mild augmentations, while the student often sees just a zoomed-in part with stronger augmentations. The student is trained to match the teacher's predictions, which forces both to agree on high-level representations. To avoid mode collapse, where both output the same thing regardless of the input, DINO centers the teacher's logits by subtracting their moving average, and sharpens them using a low temperature. After training, you keep a single network: the student, or the momentum teacher, which the DINO authors found performs even better. Its class token output is an excellent image representation (e.g., for nearest-class-mean classification), and its attention maps often segment the main object, without ever seeing a label.\n\nDINOv2 was trained on a much larger, curated dataset, and tweaked to output per-patch features, not just a global representation. So you'd want to use DINOv2 as a general-purpose, pretrained vision foundation model, e.g., as a feature extractor or backbone for classification and for dense prediction tasks such as segmentation, especially when you have few labels."
+      },
+      {
+        "key": "e7",
+        "n": 7,
+        "kind": "exercise",
+        "q": "What is the objective of the JEPA architecture? How does it work?",
+        "a": "The joint-embedding predictive architecture (JEPA), proposed by Yann LeCun as part of his world-model framework, aims to learn meaningful representations that deepen an AI's understanding of the world and make its predictions more reliable. Its objective is to predict the missing parts of an input in embedding space, rather than in pixel space.\n\nDuring training, JEPA uses two encoders and a predictor. The teacher encoder sees the full input (e.g., a photo of a cat), while the student encoder only sees part of it (e.g., the same photo without the cat's ears). Both encoders produce embeddings, and the predictor must predict the teacher's embeddings for the missing part (the ears), given the student's embeddings for the visible part. The student encoder and the predictor are trained jointly, while the teacher encoder is just a moving average of the student encoder, much like in DINO. Since it predicts abstract embeddings rather than every pixel, JEPA is fast, parameter-efficient and learns more semantic features. After training, the teacher encoder and the predictor are dropped, and the student encoder is used to produce representations for downstream tasks. I-JEPA implements this for images, while V-JEPA and V-JEPA 2 process videos."
+      },
+      {
+        "key": "e8",
+        "n": 8,
+        "kind": "exercise",
+        "q": "What is a multimodal model? Can you give five examples of multimodal tasks?",
+        "a": "A multimodal model is a model that can handle multiple modalities, meaning different kinds of data such as text, images, audio, video, or robot sensor and actuator signals, and capture how they interact. This is challenging because modalities are heterogeneous (continuous or discrete, temporal or spatial, high or low resolution, noisy or clean), and they can carry overlapping information (e.g., lip movements and speech) or combine into a new meaning (e.g., words said while rolling one's eyes). Examples of multimodal tasks:\n- Image or video captioning.\n- Visual question answering: answering a text question about an image.\n- Image search from a text query (or from an image query), e.g., with CLIP embeddings.\n- Text-to-image generation, e.g., with DALL\u00b7E or Stable Diffusion.\n- Speech-to-text and text-to-speech.\n- Visual grounding: locating the object described by a text query, such as \"the dog next to the tree\".\n- Embodied AI: a model that physically interacts with its environment, e.g., a robot following instructions."
+      },
+      {
+        "key": "e9",
+        "n": 9,
+        "kind": "exercise",
+        "q": "Explain what the fusion and alignment problems are in multimodal learning. Why are transformers well suited to tackle them?",
+        "a": "- Fusion is the problem of combining different modalities so the model can use them jointly, for example by encoding them into the same representation space. It's hard because modalities are very heterogeneous (e.g., discrete text tokens versus continuous, high-resolution audio or pixels).\n- Alignment is the problem of discovering the relationships between modalities: for example, finding the timestamp of each word of a transcript in a speech recording, or finding the most relevant object in an image given a text query such as \"the dog next to the tree\" (visual grounding).\n\nTransformers are well suited to both. First, they can ingest pretty much any modality, as long as you can chop it into a sequence of meaningful tokens (e.g., words, image patches, audio or video clips) and embed them. Embeddings from different modalities can then be fused in various ways: summed, concatenated into a single sequence, passed through a fusion encoder, or processed by separate encoders that exchange information through cross-attention (e.g., co-attention). Second, multi-head attention is a powerful tool to detect and exploit complex patterns, both within and across modalities, which takes care of alignment: through cross-attention, tokens of one modality can attend to the relevant tokens of another."
+      },
+      {
+        "key": "e10",
+        "n": 10,
+        "kind": "exercise",
+        "q": "Can you write a one-line summary of the main ideas in VideoBERT, ViLBERT, CLIP, DALL\u00b7E, Perceiver IO, Flamingo, and BLIP-2?",
+        "a": "- VideoBERT: a pretrained BERT extended to video by turning short clips into discrete visual tokens (3D CNN features clustered with hierarchical k-means), trained with masked token prediction on text or video, and with text-video alignment on both concatenated in a single stream.\n- ViLBERT: a dual-stream text-plus-image model: a BERT-based text encoder and a visual encoder over Faster R-CNN region features exchange information through co-attention (two-way cross-attention) layers, pretrained with masked prediction and image-text alignment.\n- CLIP: image and text encoders trained with a contrastive loss on 400 million image-caption pairs so that matching pairs get similar embeddings, enabling zero-shot image classification and image search.\n- DALL\u00b7E: a GPT-like model trained with next token prediction on text tokens followed by discrete image tokens (from a dVAE), so it can generate an image token by token from a text prompt.\n- Perceiver IO: a modality-agnostic model in which a short array of learned latent tokens reads arbitrarily long raw inputs via cross-attention, and output query tokens read the latents the same way, so it scales linearly with input and output sizes and handles many tasks.\n- Flamingo: connects a frozen vision encoder and a frozen LLM through a Perceiver Resampler and tanh-gated cross-attention layers, enabling open-ended visual dialogue with excellent few-shot performance on interleaved images and text.\n- BLIP-2: bridges a frozen image encoder and a frozen LLM with a lightweight querying transformer (Q-Former), trained first with image-text matching, contrastive and captioning objectives, then to map its query outputs into the LLM's input space."
+      },
+      {
+        "key": "e11",
+        "n": 11,
+        "kind": "exercise",
+        "q": "If you are using a Perceiver IO model and you double the length of the inputs and the outputs, approximately how much more computation will be required?",
+        "a": "Roughly twice as much, at most. In Perceiver IO, the inputs are only accessed through cross-attention from a fixed-size array of N latent tokens, so reading M input tokens costs about M \u00d7 N attention scores: that's linear in the input length. The latent transformer blocks only process the N latent tokens, so their cost doesn't depend on the input or output lengths at all. And the O output query tokens only attend to the latent tokens, again through cross-attention, which costs about O \u00d7 N: linear in the output length. So doubling both the input and output lengths doubles the cost of the input and output cross-attention layers (and of the per-token projections), while the latent processing cost stays the same: overall, the computation is multiplied by about 2, or a bit less. By comparison, if a regular transformer processed the same sequences with self-attention, doubling their length would multiply the cost of its attention layers by about 4, since attention is quadratic in the sequence length."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "What is an inductive bias? Give examples from common architectures, and explain how inductive biases trade off against the amount of training data.",
+        "a": "An inductive bias is an assumption about the data that a model makes implicitly because of its architecture:\n- Linear models assume the data is linear.\n- CNNs assume locality (nearby pixels are strongly related) and that a pattern learned in one location is useful everywhere else.\n- RNNs assume the inputs are ordered and that recent inputs matter more than older ones.\n- Even chopping an image into patches injects a bias toward proximity: nearby pixels are assumed to be more strongly correlated than distant ones.\n\nCorrect biases act as built-in knowledge, so the model needs less training data; wrong ones hurt performance however much data you have. Transformers make few assumptions, so they must learn such regularities from the data and need far more of it than CNNs. Given enough data, though, a low-bias model is flexible enough to discover patterns that a strongly biased one would miss."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How do you turn a batch of images into a ViT's input tokens in PyTorch (patch embeddings, class token, positional embeddings)?",
+        "a": "A Conv2d whose kernel_size and stride both equal the patch size is equivalent to chopping the image into non-overlapping patches, flattening each one, and applying the same linear layer to all of them. Its output is a feature map, so flatten the spatial dimensions and move the embedding dimension last:\n\n```python\npatch_embed = nn.Conv2d(3, embed_dim, kernel_size=16, stride=16)\nZ = patch_embed(images)  # [B, E, 14, 14] for 224 \u00d7 224 images\nZ = Z.flatten(start_dim=2).transpose(1, 2)  # [B, 196, E]\ncls = cls_token.expand(Z.shape[0], -1, -1)  # [1, 1, E] \u2192 [B, 1, E]\nZ = torch.cat((cls, Z), dim=1)  # [B, 197, E]\nZ = Z + pos_embed  # pos_embed is [1, 197, E], broadcast across the batch\n```\n\ncls_token and pos_embed are nn.Parameter tensors initialized with small random values (e.g., a standard deviation of 0.02). The tokens then go through an nn.TransformerEncoder (built with batch_first=True, here with activation=\"gelu\"), and only the class token's output, Z[:, 0], is normalized and passed to the classification head."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Walk through fine-tuning a pretrained ViT for image classification with the Hugging Face Trainer, including the gotchas.",
+        "a": "1. Load the model with a new head: ViTForImageClassification.from_pretrained(\"google/vit-base-patch16-224-in21k\", num_labels=37) gives the model a new, untrained classification head for your number of classes.\n2. Load the matching preprocessor with AutoImageProcessor.from_pretrained(model_id, use_fast=True). It resizes each image to 224 \u00d7 224, scales pixel values to between \u22121 and 1, moves the channels first, and returns a dict with a \"pixel_values\" entry.\n3. Write a collate function that runs the processor on a batch of images (return_tensors=\"pt\", plus do_convert_rgb=True because some images are RGBA and would crash training) and adds a \"labels\" tensor.\n4. Create TrainingArguments (output directory, batch size, number of epochs, eval_strategy=\"epoch\", remove_unused_columns=False), pass them to a Trainer with the model, collate function and datasets, and call trainer.train().\n\nWhy remove_unused_columns=False: by default, the Trainer drops the dataset columns that the model's forward() method doesn't accept, such as \"image\", before your collate function gets to see them."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Compare BEiT and MAE, two ways to pretrain ViTs with masked image modeling.",
+        "a": "Both borrow BERT's idea: hide some image patches and train the model to reconstruct them from the visible ones, with no labels needed.\n- BEiT doesn't predict pixels. A discrete variational autoencoder (dVAE) first turns each patch into a visual token ID from a fixed vocabulary, and BEiT must predict the IDs of the masked patches, just like masked language modeling. This avoids wasting capacity on unimportant pixel details, but it requires a separately trained tokenizer.\n- MAE (masked autoencoder) removes the dVAE and predicts raw pixel values directly. Its encoder-decoder is asymmetric: a large encoder processes only the visible patches, and a lightweight decoder reconstructs the whole image. Since about 75% of the patches are masked, the encoder handles only a quarter of the tokens, which makes pretraining much cheaper and lets it scale to very large datasets. Afterward, only the encoder is kept for downstream tasks."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "What's the difference between single-stream and dual-stream multimodal transformers, and how does ViLBERT's co-attention connect its two streams?",
+        "a": "A single-stream model, such as VideoBERT, fuses the modalities early: it concatenates the text tokens and visual tokens into one sequence processed by a single encoder. It's simple, but it treats both modalities identically.\n\nA dual-stream model, such as ViLBERT, gives each modality its own encoder, so each gets the processing it needs, and a model pretrained on text alone isn't forced to digest foreign inputs that could damage its weights. In ViLBERT, the text stream starts with BERT layers, while the visual features come from a frozen, pretrained Faster R-CNN (one vector per detected region) and are already high level, so the visual stream only needs co-attention layers.\n\nThe streams are connected by pairs of co-attention layers: in each pair, one stream provides the queries and the other the keys and values, and vice versa. This two-way cross-attention lets each modality refine its representations using the other."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Walk through CLIP's contrastive training loss for a batch of m image-caption pairs.",
+        "a": "1. Encode the m images and m captions, project both into a shared space with the same dimensionality, and \u21132-normalize every vector.\n2. Compute the m \u00d7 m matrix of cosine similarities, where entry (i, j) compares image i with caption j.\n3. Divide the similarities by a learned temperature to get logits.\n4. Treat each row as an m-way classification whose correct class is the diagonal entry (caption i goes with image i), and compute its cross-entropy; do the same for each column, and average.\n\nThis pulls matching pairs together and pushes mismatched pairs apart. Ideally, matches score near +1 and mismatches near 0 rather than \u22121, since unrelated high-dimensional vectors are nearly orthogonal. Every other caption in the batch serves as a negative example, so the method needs very large batches (CLIP used 32,768 pairs); with too few negatives, the model can overfit details of the positive pairs."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How do you use CLIP for zero-shot image classification with the Transformers library, both via a pipeline and by hand?",
+        "a": "The pipeline does everything in one call:\n\n```python\nfrom transformers import pipeline\n\nclip = pipeline(task=\"zero-shot-image-classification\",\n                model=\"openai/clip-vit-base-patch32\")\nresults = clip(image_url, candidate_labels=[\"cricket\", \"ladybug\", \"spider\"],\n               hypothesis_template=\"This is a photo of a {}.\")\n```\n\nBy hand, call a CLIPProcessor on the captions and the image (text=captions, images=[image], return_tensors=\"pt\", padding=True), pass the result to a CLIPModel, and read outputs.image_embeds and outputs.text_embeds, which are already \u21132-normalized. Then image_embeds @ text_embeds.T gives the cosine similarities; multiply them by clip_model.logit_scale.exp() (the learned inverse temperature, about 100) and apply a softmax to get probabilities. If you encode images and text separately with get_image_features() and get_text_features(), normalize the features yourself.\n\nCaption-like prompts such as \"This is a photo of a ladybug\" work better than bare labels because CLIP was trained on web captions; if you don't pass a hypothesis_template, the pipeline still wraps each label in a similar caption template."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How does Flamingo add visual inputs to a frozen pretrained LLM without disrupting it at the start of training?",
+        "a": "It inserts gated xattn-dense modules between the frozen LLM's blocks. Each contains a cross-attention layer, whose queries come from the text tokens and whose keys and values are visual tokens (produced by a Perceiver Resampler from the frozen vision encoder's outputs), followed by a feedforward module, each with a skip connection.\n\nThe trick is tanh gating: the outputs of the cross-attention layer and of the feedforward module are multiplied by tanh(\u03b1), where \u03b1 is a learnable scalar (one per gate) initialized to 0. Since tanh(0) = 0, at first everything flows through the skip connections and the model behaves exactly like the original LLM. During training, the gates gradually open and visual information starts to influence the text.\n\nThe cross-attention is also masked so that each text token only sees the visual tokens of the closest preceding image; earlier images remain reachable indirectly through the LLM's own self-attention."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "BLIP-2 bridges a frozen image encoder and a frozen LLM with a Q-Former. How is it trained?",
+        "a": "Stage 1: the Q-Former (initialized from BERT-base, plus new cross-attention layers that attend to the frozen image encoder's visual tokens) processes a caption and a set of learnable query tokens. It's trained on three objectives, each with its own attention mask:\n- Image-text matching: queries and text attend to each other, and a binary head predicts whether the caption matches the image (using hard negatives).\n- Image-text contrastive: queries and text can't see each other, and a CLIP-like loss aligns the query outputs with the text's class token output.\n- Captioning: text tokens attend causally to earlier text and to all the queries (which can't see the text), and the model is trained with next-token prediction.\n\nStage 2: a new linear layer projects the query outputs into the frozen LLM's input embedding space, where they're placed before the text tokens as a visual prompt, and the model learns to predict the caption's next tokens."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-ch18-autoencoders-gans-and-diffusion-models",
+    "title": "Chapter 18 \u2014 Autoencoders, GANs, and Diffusion Models",
+    "sources": [
+      "textbook/hands_on_ml/ch18-autoencoders-gans-and-diffusion-models/exercises.md",
+      "textbook/hands_on_ml/ch18-autoencoders-gans-and-diffusion-models/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "e1",
+        "n": 1,
+        "kind": "exercise",
+        "q": "What are the main tasks that autoencoders are used for?",
+        "a": "Autoencoders are mainly used for the following tasks:\n- Dimensionality reduction: an undercomplete autoencoder compresses its inputs into compact codings. For visualization, a common strategy is to compress a large dataset this way first, then use another algorithm such as t-SNE to get down to 2D.\n- Feature extraction: the codings act as learned feature detectors (sparse autoencoders often produce fairly interpretable ones).\n- Unsupervised pretraining: train an autoencoder on plenty of unlabeled data, then reuse its lower layers in a model trained on the few labeled instances.\n- Anomaly detection: an input unlike the training data (out of distribution) is poorly reconstructed, so a reconstruction loss above a chosen threshold flags an anomaly.\n- Denoising: a denoising autoencoder can remove noise from images.\n- Generating new data: generative autoencoders such as VAEs produce new instances that look like the training data (and allow semantic interpolation between instances).\n- Compact inputs for other models: discrete VAEs turn images into sequences of codes that a transformer can model (as in DALL\u00b7E), and latent diffusion models run the diffusion process in an autoencoder's small latent space."
+      },
+      {
+        "key": "e2",
+        "n": 2,
+        "kind": "exercise",
+        "q": "Suppose you want to train a classifier, and you have plenty of unlabeled training data but only a few thousand labeled instances. How can autoencoders help? How would you proceed?",
+        "a": "Autoencoders let you learn from all the unlabeled data: an autoencoder trained on it learns useful feature detectors, which the classifier can then reuse instead of having to learn every low-level feature from a few thousand labeled instances. This is called unsupervised pretraining. Here's how to proceed:\n1. Train an autoencoder (e.g., a stacked, convolutional, or denoising autoencoder) on the whole training set, labeled and unlabeled instances alike, since it doesn't need labels. Check that it reconstructs held-out images reasonably well.\n2. Build the classifier by reusing the autoencoder's encoder (its lower layers) and adding new layers on top, ending with an output layer suited to the classification task.\n3. Train the classifier on the labeled instances. Since the new top layers start out random, freeze the reused layers at first (with very little labeled data, you may want to keep at least the lowest ones frozen), then consider unfreezing some of them and fine-tuning with a lower learning rate.\n4. Compare the result with the same classifier trained from scratch on the labeled data only, to check that the pretraining actually helps."
+      },
+      {
+        "key": "e3",
+        "n": 3,
+        "kind": "exercise",
+        "q": "If an autoencoder perfectly reconstructs the inputs, is it necessarily a good autoencoder? How can you evaluate the performance of an autoencoder?",
+        "a": "No. A perfect reconstruction may just mean that the autoencoder found a way to copy its inputs without learning anything useful. An overcomplete autoencoder with no other constraint can simply learn the identity function. Even with a tiny coding layer, a powerful enough encoder could learn to map each training instance to an arbitrary number, with the decoder learning the reverse mapping: the training data would be reconstructed perfectly, but the codings would be meaningless and the model would likely generalize poorly to new instances. Very poor reconstructions, on the other hand, clearly signal a bad autoencoder.\n\nTo evaluate an autoencoder:\n- Measure its reconstruction loss (e.g., the MSE between the inputs and the outputs) on a validation or test set, and visually compare some inputs with their reconstructions. A high loss shows that the autoencoder is bad, but a low loss doesn't prove that it's good.\n- Evaluate it on the task it was built for. For example, if it's used for unsupervised pretraining, measure the performance of the classifier that reuses its encoder; if it's used for anomaly detection, check how well it flags anomalies; and if it's a generative autoencoder, look at the quality and diversity of the instances it generates."
+      },
+      {
+        "key": "e4",
+        "n": 4,
+        "kind": "exercise",
+        "q": "What are undercomplete and overcomplete autoencoders? What is the main risk of an excessively undercomplete autoencoder? What about the main risk of an overcomplete autoencoder?",
+        "a": "An undercomplete autoencoder has codings of lower dimensionality than its inputs (e.g., 32 codings for 784-pixel images). Since it can't just copy its inputs to its codings, it must compress the data, which pushes it to keep the most important features and discard the rest. An overcomplete autoencoder has a coding layer as large as its inputs, or even larger.\n\nThe main risk of an excessively undercomplete autoencoder is that its codings are too small to hold the information needed to reconstruct the inputs: the reconstructions become too lossy, and useful information is thrown away. That's why autoencoders are rarely used on their own to reduce data all the way down to 2 or 3 dimensions.\n\nThe main risk of an overcomplete autoencoder is that it just learns to copy its inputs to its outputs (the identity function) without learning any useful features. It therefore needs some other constraint to force it to learn useful representations, such as adding noise to the inputs (denoising autoencoder), penalizing active codings (sparse autoencoder), or the latent loss and sampling noise of a variational autoencoder."
+      },
+      {
+        "key": "e5",
+        "n": 5,
+        "kind": "exercise",
+        "q": "How do you tie weights in a stacked autoencoder? What is the point of doing so?",
+        "a": "You tie weights by making each decoder layer reuse the transposed weight matrix of the corresponding encoder layer instead of having its own weights. This requires a stacked autoencoder that's symmetrical around its coding layer. If it has n layers (not counting the input layer) and W\u2097 is the weight matrix of layer l, with layer n/2 being the coding layer, then the decoder layers use W\u2097 = W\u2099\u208b\u2097\u208a\u2081\u1d40 for l = n/2 + 1, \u2026, n. Only the weights are shared: each decoder layer keeps its own bias vector. In PyTorch, you can create nn.Linear layers for the encoder only, plus nn.Parameter bias vectors for the decoder, and implement each decoder layer with F.linear(), passing it the transposed weights of the mirror encoder layer (e.g., self.enc2.weight.t()) and the decoder layer's own bias.\n\nThe point is to roughly halve the number of weights in the model, which makes training faster and reduces the risk of overfitting. On Fashion MNIST, a tied autoencoder even reached a lower reconstruction error than its untied counterpart, with about half the parameters."
+      },
+      {
+        "key": "e6",
+        "n": 6,
+        "kind": "exercise",
+        "q": "What is a generative model? Can you name a type of generative autoencoder?",
+        "a": "A generative model is one that can produce new, random instances that resemble the training data, as if they had been drawn from the same distribution. For example, a generative model trained on pictures of faces can produce new, realistic faces of people who don't exist. Some can also be guided, for instance by conditioning them on a text description of the desired output.\n\nThe main type of generative autoencoder is the variational autoencoder (VAE). Instead of producing a coding directly, its encoder outputs a mean coding and a standard deviation (usually as the log of the variance), and the actual coding is sampled from that Gaussian distribution. Its cost function adds a latent loss to the reconstruction loss, pushing the codings to look like samples from a standard Gaussian distribution. So after training, you can generate a new instance simply by sampling a random coding from that Gaussian distribution and decoding it. Variants include discrete VAEs (whose codes follow a categorical distribution) and hierarchical VAEs. GANs and diffusion models are generative models too, but they aren't autoencoders."
+      },
+      {
+        "key": "e7",
+        "n": 7,
+        "kind": "exercise",
+        "q": "What is a GAN? Can you name a few tasks where GANs can shine?",
+        "a": "A generative adversarial network (GAN) is composed of two neural networks with opposite goals. The generator turns a random coding (usually drawn from a Gaussian distribution) into data, usually an image, much like a VAE's decoder. The discriminator is a binary classifier: it's shown either a real image from the training set or a fake one from the generator, and it must tell which is which. Each training iteration has two phases: first, the discriminator is trained for one step on a batch of real images (labeled 1) and fake images (labeled 0); then the generator is trained for one step, with the discriminator frozen, to make the discriminator classify its fake images as real. Interestingly, the generator never gets to see a real image: its only training signal is the gradient that flows back to it through the discriminator.\n\nGANs can shine at increasing image resolution (super-resolution), colorizing images, advanced image editing such as replacing photobombers with a realistic background, turning rough sketches into photorealistic images, predicting the upcoming frames of a video, generating extra training data to augment a dataset, generating other kinds of data such as text, audio, or time series, and exposing weaknesses in other models so they can be strengthened. Diffusion models have largely replaced them for high-quality image generation, but GANs remain useful when generation must be very fast."
+      },
+      {
+        "key": "e8",
+        "n": 8,
+        "kind": "exercise",
+        "q": "What are the main difficulties when training GANs?",
+        "a": "The generator and the discriminator play a zero-sum game against each other, which causes several difficulties:\n- No guarantee of convergence: a GAN's only Nash equilibrium is reached when the generator's images are perfectly realistic, leaving the discriminator no better than a coin toss (50% real, 50% fake), yet there's no guarantee that training will ever get there.\n- Mode collapse, the biggest difficulty: the generator's outputs gradually lose diversity. If it gets slightly better at producing, say, shoes, it produces more and more shoes and forgets everything else, while the discriminator, seeing only fake shoes, forgets how to spot other fakes. When the discriminator catches up, the generator moves to another class, and the GAN may keep cycling across a few classes without mastering any.\n- Instability: as the two networks push against each other, their parameters can keep oscillating; training may go well for a while, then blow up or seem to forget what it had learned.\n- Hyperparameter sensitivity: the dynamics depend on many factors, so getting the hyperparameters right can take a lot of tuning."
+      },
+      {
+        "key": "e9",
+        "n": 9,
+        "kind": "exercise",
+        "q": "What are diffusion models good at? What is their main limitation?",
+        "a": "A diffusion model is trained to denoise images a little at a time, so you can generate a brand-new image by starting from pure random noise and repeatedly denoising it. Diffusion models are good at generating high-quality, highly realistic images that are also more diverse than those produced by GANs, and they are much easier and more stable to train than GANs, since training is a simple regression task (predicting the noise that was added to an image) rather than an adversarial game. They are also easy to guide by conditioning them on text prompts or input images, which enables text-to-image generation, inpainting (filling holes in an image), and outpainting (extending an image beyond its borders). Pretrained latent diffusion models such as Stable Diffusion let anyone generate impressive images in seconds.\n\nTheir main limitation is slow generation: the model must be run once per denoising step, so generating a single image with a DDPM takes thousands of steps (e.g., 1,000 or 4,000), whereas a GAN or a VAE generates an image in a single forward pass. DDIM sampling (which skips many steps) and latent diffusion (which runs the process in a much smaller latent space) reduce this cost considerably, but GANs are still preferred when generation must be very fast."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "How does a denoising autoencoder work, and how do you implement the dropout version in PyTorch?",
+        "a": "You corrupt the inputs during training and train the autoencoder to reconstruct the original, clean inputs. Since it can't simply copy what it sees, it has to learn the structure of the data, so the coding layer doesn't need to compress as much (it can even be as large as the input). The corruption is either Gaussian noise added to the inputs or randomly switched-off inputs, as in dropout.\n\nThe dropout version is a regular stacked autoencoder whose encoder starts with a Dropout layer, and the targets are still the clean images:\n\n```python\nencoder = nn.Sequential(\n    nn.Flatten(),\n    nn.Dropout(0.5),                     # zeroes each pixel with probability 0.5\n    nn.Linear(28 * 28, 128), nn.ReLU(),\n    nn.Linear(128, 128), nn.ReLU())\n```\n\nDropout is only active in training mode, so after model.eval() the inputs pass through untouched. Besides feature learning and pretraining, a trained denoising autoencoder can be used directly to clean up noisy images."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "What is a sparse autoencoder, and how does the KL-divergence sparsity loss work?",
+        "a": "A sparse autoencoder adds a loss term that keeps most coding units inactive for any given input, so each input is represented by a few active units, which tend to become interpretable features. The coding layer is usually large (e.g., 256 units), with a sigmoid activation so codings lie in [0, 1].\n\n- Simple option: add the \u21131 norm of the codings to the loss, times a weight. Unlike \u21132, it drives unneeded codings to 0 rather than shrinking them all.\n- Often better: compute each coding unit's mean activation q over the batch (so batches can't be too small) and add D_KL(p \u2016 q) = p\u00b7log(p/q) + (1 \u2212 p)\u00b7log((1 \u2212 p)/(1 \u2212 q)), summed over the units, where p is the target sparsity (e.g., 0.1). Its gradients are much stronger than those of the squared error (p \u2212 q)\u00b2.\n\nThe weight is a trade-off: too high a weight hurts reconstruction, while too low a weight lets the model ignore sparsity."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How does a variational autoencoder's encoder produce codings, and what is the reparameterization trick?",
+        "a": "The encoder doesn't output a coding directly. It outputs the parameters of a Gaussian, a mean \u03bc and (usually) the log-variance \u03b3 = log \u03c3\u00b2, and the coding is sampled from N(\u03bc, \u03c3\u00b2). So a VAE's outputs are partly random even after training.\n\nSampling isn't differentiable, so gradients couldn't reach the encoder. The reparameterization trick samples \u03b5 from N(0, I) instead and computes z = \u03bc + \u03c3 \u2299 \u03b5: the randomness is isolated in \u03b5, and gradients flow back through \u03bc and \u03c3. In PyTorch, the encoder's last layer outputs 2 \u00d7 codings_dim values, which are split in two:\n\n```python\ndef encode(self, X):\n    return self.encoder(X).chunk(2, dim=-1)   # (mean, logvar)\n\ndef sample_codings(self, mean, logvar):\n    std = torch.exp(0.5 * logvar)             # \u03c3 = exp(\u03b3 / 2)\n    return mean + torch.randn_like(std) * std\n```\n\nOnce the VAE is trained, you generate new instances by sampling z from N(0, I) and passing it to the decoder."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "Write out a VAE's latent loss in terms of \u03bc and \u03b3 = log \u03c3\u00b2, and explain what it does and how it's combined with the reconstruction loss.",
+        "a": "\u2112 = \u2212\u00bd \u2211\u1d62 [1 + \u03b3\u1d62 \u2212 exp(\u03b3\u1d62) \u2212 \u03bc\u1d62\u00b2], summed over the n coding dimensions, where \u03bc\u1d62 and \u03b3\u1d62 are the encoder's outputs for dimension i.\n\nIt's the KL divergence between the encoder's Gaussian and the standard normal distribution. Rewritten as \u00bd \u2211\u1d62 [\u03bc\u1d62\u00b2 + (exp(\u03b3\u1d62) \u2212 \u03b3\u1d62 \u2212 1)], the first part pulls the means toward 0, and the second is 0 only when \u03b3\u1d62 = 0, i.e., \u03c3\u1d62 = 1. So the codings come to look like samples from N(0, I), which is what lets you generate new data by sampling from N(0, I) and decoding.\n\nThe total loss is the reconstruction loss (e.g., MSE) plus a weighted latent loss. Mind the scales: if the MSE is averaged over the pixels (784 for Fashion MNIST) while the latent loss is summed over coding dimensions, divide the latent loss by the number of pixels so the two terms are comparable."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "How do discrete VAEs get gradients through the choice of discrete codes? Contrast Gumbel-softmax with VQ-VAE.",
+        "a": "A discrete VAE encodes each input as d integer codes, each between 0 and k \u2212 1, so it can act as a tokenizer: a transformer can learn to generate sequences of codes (as in the first DALL\u00b7E), and the decoder turns them into images. Picking a code isn't differentiable, so:\n\n- Gumbel-softmax: the encoder outputs logits of shape [d, k]. Adding Gumbel noise to the logits and taking the argmax is equivalent to categorical sampling, and the backward pass replaces the argmax with a softmax. F.gumbel_softmax(logits, tau=temperature, hard=True) does exactly this: one-hot codes forward, softmax gradients backward. The temperature is usually annealed from 1 down to about 0.1.\n- VQ-VAE: the encoder outputs d embeddings of size e, and each is replaced by the nearest of the k vectors in a trainable codebook of shape [k, e]. The backward pass treats this lookup as the identity function (the straight-through estimator). Training tends to be more stable."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "Walk through one GAN training iteration in PyTorch.",
+        "a": "Each iteration has two phases, each with its own optimizer. Here bce is nn.BCELoss() (the discriminator ends with a sigmoid), and ones and zeros are label tensors of shape [batch_size, 1]:\n\n```python\n# Phase 1: train the discriminator (real images \u2192 1, fakes \u2192 0)\nz = torch.randn(batch_size, codings_dim, device=device)\nfake = generator(z).detach()                # no gradients for the generator\nd_loss = bce(discriminator(real), ones) + bce(discriminator(fake), zeros)\nd_opt.zero_grad(); d_loss.backward(); d_opt.step()\n# Phase 2: train the generator to make the discriminator say \"real\"\ndiscriminator.requires_grad_(False)         # freeze the discriminator\nz = torch.randn(batch_size, codings_dim, device=device)\ng_loss = bce(discriminator(generator(z)), ones)\ng_opt.zero_grad(); g_loss.backward(); g_opt.step()\ndiscriminator.requires_grad_(True)\n```\n\nIn phase 2 the fakes are deliberately labeled \"real\", and only the generator's weights change. The generator never sees a real image: all it learns from is the gradient flowing back through the discriminator."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "How do experience replay and mini-batch discrimination help prevent mode collapse in GANs?",
+        "a": "Mode collapse is when the generator's outputs gradually lose diversity. Both techniques change what the discriminator gets to see:\n\n- Experience replay: store the images the generator produces over time in a replay buffer (gradually dropping the oldest), and train the discriminator on real images plus fakes sampled from that buffer, rather than only on the current generator's output. The discriminator is then less likely to overfit the latest generator's outputs.\n- Mini-batch discrimination: measure how similar the images in a batch are to each other and give that statistic to the discriminator. A batch of fakes lacking diversity becomes easy to reject, so the generator is pushed to produce varied images."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Explain the DDPM forward (noising) process and its closed-form shortcut.",
+        "a": "Starting from a training image x\u2080, each step t scales the image by \u221a(1 \u2212 \u03b2\u209c) and adds Gaussian noise of mean 0 and variance \u03b2\u209c, independently for every pixel (isotropic noise):\n\nq(x\u209c | x\u209c\u208b\u2081) = N(\u221a(1 \u2212 \u03b2\u209c)\u00b7x\u209c\u208b\u2081, \u03b2\u209c\u00b7I)\n\nThe variance schedule \u03b2\u209c sets how fast the image fades. The scaling drives the mean to 0, and since each step maps the variance v to (1 \u2212 \u03b2\u209c)\u00b7v + \u03b2\u209c, the variance converges to 1, so after the last step T (typically thousands), x_T is essentially pure N(0, I) noise.\n\nA sum of independent Gaussians is Gaussian, so you can jump straight to any step. With \u03b1\u209c = 1 \u2212 \u03b2\u209c and \u1fb1\u209c = \u03b1\u2081\u00b7\u03b1\u2082\u00b7\u2026\u00b7\u03b1\u209c:\n\nq(x\u209c | x\u2080) = N(\u221a\u1fb1\u209c\u00b7x\u2080, (1 \u2212 \u1fb1\u209c)\u00b7I), i.e., x\u209c = \u221a\u1fb1\u209c\u00b7x\u2080 + \u221a(1 \u2212 \u1fb1\u209c)\u00b7\u03b5 with \u03b5 ~ N(0, I)\n\n\u1fb1\u209c is the fraction of the original image's variance that remains; a cosine schedule makes it decay smoothly from 1 to 0."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "How is a DDPM trained, what exactly does the model predict, and why?",
+        "a": "Training pairs are built on the fly: take an image x\u2080 (pixels rescaled to [\u22121, 1]), pick a random step t between 1 and T, sample \u03b5 ~ N(0, I), and noise the image in one shot: x\u209c = \u221a\u1fb1\u209c\u00b7x\u2080 + \u221a(1 \u2212 \u1fb1\u209c)\u00b7\u03b5, where \u1fb1\u209c is the fraction of the image's variance left at step t. The input is the pair (x\u209c, t), and the target is the unscaled noise \u03b5.\n\nThe model \u03b5_\u03b8(x\u209c, t) outputs a tensor shaped like the image. DDPM used a U-Net (a CNN that downsamples then upsamples, with skip connections between matching levels) that also gets a sinusoidal encoding of t at every level. The loss compares predicted and actual noise: MSE, or MAE, which worked better in practice (Huber works too).\n\nPredicting the noise rather than the clean image gave more stable training and better results, and since the noise is Gaussian, the KL-based objective reduces to a squared error."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "How do you generate images with a trained DDPM, and how does DDIM make it faster?",
+        "a": "Start from pure noise x_T ~ N(0, I) and apply the reverse step for t = T, \u2026, 1:\n\nx\u209c\u208b\u2081 = (1/\u221a\u03b1\u209c)\u00b7(x\u209c \u2212 (\u03b2\u209c/\u221a(1 \u2212 \u1fb1\u209c))\u00b7\u03b5_\u03b8(x\u209c, t)) + \u221a\u03b2\u209c\u00b7z, with z ~ N(0, I)\n\nHere \u03b5_\u03b8 is the trained noise predictor, \u03b2\u209c the noise variance of step t, \u03b1\u209c = 1 \u2212 \u03b2\u209c, and \u1fb1\u209c = \u03b1\u2081\u00b7\u03b1\u2082\u00b7\u2026\u00b7\u03b1\u209c. Each step removes the scaled predicted noise, rescales, and adds a little fresh noise, so runs differ. At one model call per step, thousands in total, it's slow.\n\nDDIM reuses the same trained model but can jump from step t to any earlier step p (e.g., 50 steps at a time). It first estimates the clean image, x\u0302\u2080 = (x\u209c \u2212 \u221a(1 \u2212 \u1fb1\u209c)\u00b7\u03b5_\u03b8(x\u209c, t))/\u221a\u1fb1\u209c, then re-noises it to level p: x\u209a = \u221a\u1fb1\u209a\u00b7x\u0302\u2080 + \u221a(1 \u2212 \u1fb1\u209a \u2212 \u03c3\u209c\u00b2)\u00b7\u03b5_\u03b8(x\u209c, t) + \u03c3\u209c\u00b7z. A hyperparameter \u03b7 from 0 to 1 scales the fresh noise \u03c3\u209c: \u03b7 = 0 is fully deterministic, \u03b7 = 1 behaves like DDPM."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "What is a latent diffusion model, and how do you generate an image with a pretrained one using Hugging Face Diffusers?",
+        "a": "A latent diffusion model runs the diffusion process in the compact latent space of a powerful autoencoder instead of in pixel space: the encoder compresses the training images, the model learns to denoise latents, and at generation time the decoder turns the final denoised latent into an image. Working on much smaller tensors makes training far cheaper and generation much faster, with outstanding quality. The process can also be conditioned on a text prompt or an image, enabling text-to-image generation, inpainting, and outpainting. Stable Diffusion is an open-source pretrained one:\n\n```python\nfrom diffusers import AutoPipelineForText2Image\npipe = AutoPipelineForText2Image.from_pretrained(\"stabilityai/sd-turbo\",\n                                                 variant=\"fp16\")\npipe.to(device)\nimage = pipe(prompt=\"an oil painting of a lighthouse at dawn\",\n             num_inference_steps=1, guidance_scale=0.0).images[0]\n```\n\nvariant=\"fp16\" fetches the half-precision weights, and .images is a list of PIL images. SD-Turbo is distilled to work in a single denoising step, and guidance_scale=0.0 disables classifier-free guidance, which it doesn't use."
       }
     ]
   },
@@ -868,7 +2554,8 @@ window.DECKS = [
     "id": "textbook-hands-on-ml-ch19-reinforcement-learning",
     "title": "Chapter 19 \u2014 Reinforcement Learning",
     "sources": [
-      "textbook/hands_on_ml/ch19-reinforcement-learning/exercises.md"
+      "textbook/hands_on_ml/ch19-reinforcement-learning/exercises.md",
+      "textbook/hands_on_ml/ch19-reinforcement-learning/additional_exercises.md"
     ],
     "cards": [
       {
@@ -926,6 +2613,318 @@ window.DECKS = [
         "kind": "exercise",
         "q": "What is a model-based RL algorithm? Can you give some examples?",
         "a": "A model-based RL algorithm includes a model of the environment, which it uses to predict future states and rewards. This makes it possible to plan ahead by simulating the outcomes of potential actions or sequences of actions. A good example is MuZero, which learns such a model and uses Monte-Carlo Tree Search (MCTS) for planning."
+      },
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Walk through the Gymnasium API for running an episode: what do gym.make(), env.reset(), and env.step() take and return?",
+        "a": "gym.make(\"CartPole-v1\", render_mode=\"rgb_array\", max_episode_steps=1000) creates an environment: render_mode=\"rgb_array\" makes env.render() return frames as NumPy arrays, and max_episode_steps overrides the default episode length limit. env.reset(seed=42) starts an episode and returns (obs, info), where info is an environment-specific dict. env.action_space describes the valid actions (Discrete(2) means 0 or 1). env.step(action) returns five values: the new observation, the reward, done (the episode is over, e.g., the pole fell; Gymnasium's docs call it terminated), truncated (cut short, typically by the step limit), and info:\n\n```python\nobs, info = env.reset(seed=42)\ntotal_rewards = 0\nwhile True:\n    obs, reward, done, truncated, info = env.step(policy(obs))\n    total_rewards += reward\n    if done or truncated:\n        break\nenv.close()   # once you're completely done with the environment\n```\n\nAfter an episode ends, you must call reset() before stepping again."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How does a PyTorch policy network pick a discrete action, and why sample the action instead of taking the most likely one?",
+        "a": "The network maps a state to action logits (for two actions, a single logit for action 1 is enough), with no final sigmoid or softmax, for performance and numerical stability. You wrap the logits in a probability distribution, sample from it, and keep the log probability, which the policy gradient loss needs:\n\n```python\ndef choose_action(model, obs):\n    logit = model(torch.as_tensor(obs))\n    dist = torch.distributions.Bernoulli(logits=logit)  # Categorical if >2 actions\n    action = dist.sample()\n    return int(action.item()), dist.log_prob(action)\n```\n\nSampling balances exploration and exploitation: actions that worked become more likely, but the others still get tried now and then, so the agent can discover better ones. For continuous actions, the network instead outputs the mean and the (log) standard deviation of a Gaussian distribution to sample from."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Explain the REINFORCE algorithm and its loss function.",
+        "a": "REINFORCE (Monte Carlo policy gradient) repeats these steps:\n\n1. Play a full episode with the stochastic policy, recording each action's log probability and each reward.\n2. Compute each action's return r\u209c: the discounted sum of the rewards from that step on (reward + \u03b3\u00b7next reward + \u03b3\u00b2\u00b7the one after + \u2026), computed backward through the episode.\n3. Standardize the returns (subtract their mean, divide by their standard deviation) to stabilize training.\n4. Take a gradient step on L(\u03b8) = \u2212\u2211\u209c log \u03c0_\u03b8(a\u209c | s\u209c)\u00b7r\u209c.\n\nMinimizing L raises the probability of actions whose return was above average and lowers it for the others, which amounts to following the gradient of the expected return. It's simple but sample-inefficient, since single-episode returns are very noisy, and unstable, since it only trains on the states the current policy reaches, so it can forget how to handle the others."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "State the Bellman optimality equation and explain how Q-value iteration turns it into an algorithm.",
+        "a": "For a Markov decision process with known dynamics, the optimal state values satisfy, for every state s:\n\nV*(s) = max\u2090 \u2211\u209b\u2032 T(s, a, s\u2032)\u00b7[R(s, a, s\u2032) + \u03b3\u00b7V*(s\u2032)]\n\nT(s, a, s\u2032) is the probability of landing in s\u2032 after taking action a in s, R(s, a, s\u2032) is the reward for that transition, and \u03b3 is the discount factor. In words: a state's optimal value is what you get on average by taking the best action, the immediate reward plus the discounted optimal value of wherever you land.\n\nQ-value iteration applies the same recursion to state-action pairs. Initialize all Q-values to 0 (\u2212\u221e for impossible actions) and repeatedly update every pair:\n\nQ\u2096\u208a\u2081(s, a) \u2190 \u2211\u209b\u2032 T(s, a, s\u2032)\u00b7[R(s, a, s\u2032) + \u03b3\u00b7max\u2090\u2032 Q\u2096(s\u2032, a\u2032)]\n\nThis dynamic-programming update converges to the optimal Q-values Q*(s, a), and the optimal policy is then simply \u03c0*(s) = argmax\u2090 Q*(s, a)."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "What is the Q-learning update rule, and what are the TD target and the TD error?",
+        "a": "Q-learning adapts Q-value iteration to the realistic case where the transition probabilities and rewards are unknown. Instead of averaging over all possible next states, it learns from each transition (s, a, r, s\u2032) the agent actually experiences, keeping a running average:\n\nQ(s, a) \u2190 (1 \u2212 \u03b1)\u00b7Q(s, a) + \u03b1\u00b7(r + \u03b3\u00b7max\u2090\u2032 Q(s\u2032, a\u2032))\n\nr + \u03b3\u00b7max\u2090\u2032 Q(s\u2032, a\u2032) is the TD target: the observed reward plus the value of acting optimally from s\u2032 on, discounted by \u03b3. Its difference from the current estimate Q(s, a) is the TD error, and each update moves Q(s, a) a fraction \u03b1 of the way toward the target. TD learning does the same for state values: V(s) \u2190 V(s) + \u03b1\u00b7(r + \u03b3\u00b7V(s\u2032) \u2212 V(s)). As with SGD, \u03b1 must be gradually decreased for the estimates to settle instead of bouncing around. Once the Q-values are accurate, the policy is to pick argmax\u2090 Q(s, a)."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "How does an \u03b5-greedy exploration policy work, and what is an exploration function?",
+        "a": "Q-learning only works if the exploration policy visits the environment thoroughly; a purely random policy eventually does, but it can take extremely long. An \u03b5-greedy policy acts randomly with probability \u03b5 and greedily (highest estimated Q-value) with probability 1 \u2212 \u03b5. As the estimates improve, it spends more and more time in the interesting parts of the environment while still visiting unknown regions. \u03b5 usually starts high (e.g., 1.0) and is gradually reduced (e.g., to 0.05).\n\nAn exploration function instead makes rarely tried actions look attractive by adding a bonus to the Q-values in the update target:\n\nQ(s, a) \u2190 (1 \u2212 \u03b1)\u00b7Q(s, a) + \u03b1\u00b7(r + \u03b3\u00b7max\u2090\u2032 f(Q(s\u2032, a\u2032), N(s\u2032, a\u2032)))\n\nN(s\u2032, a\u2032) counts how often action a\u2032 was chosen in state s\u2032, and f(Q, N) = Q + \u03ba/(1 + N), where the curiosity hyperparameter \u03ba sets how strongly the agent is drawn to the unknown."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Walk through one deep Q-learning training step, including how the target Q-values are computed.",
+        "a": "The DQN takes a state and outputs one Q-value per action, which is much more efficient than feeding it (state, action) pairs. Each training step works on a random batch of experiences sampled from the replay buffer:\n\n```python\nstate, action, reward, next_state, done, truncated = sample_experiences(buffer, 32)\nwith torch.inference_mode():\n    max_next_Q = model(next_state).max(dim=1).values\nrunning = (~(done | truncated)).float()            # 0 where the episode ended\ntarget_Q = reward + running * gamma * max_next_Q   # y = r + \u03b3\u00b7max\u2090\u2032 Q(s\u2032, a\u2032)\nQ = model(state).gather(dim=1, index=action.unsqueeze(1))  # Q of the action taken\nloss = criterion(Q, target_Q.unsqueeze(1))         # MSE or Huber\noptimizer.zero_grad()\nloss.backward()\noptimizer.step()\n```\n\nThe target is computed without tracking gradients, and it gets no future value if the episode ended. The chapter treats a truncated episode (cut short by a step limit) the same way for simplicity; some algorithms still add the future value there, since the state isn't truly terminal. gather() picks, in each row, the predicted Q-value of the action actually taken, and gradient descent pulls it toward the target. Because the agent needs the action with the highest Q-value at every step, DQNs generally don't suit continuous action spaces."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Why is basic deep Q-learning unstable, and how does a target network fix this?",
+        "a": "The same network predicts Q(s, a) and also computes its own targets r + \u03b3\u00b7max\u2090\u2032 Q(s\u2032, a\u2032), so every update shifts the targets too, like a dog chasing its tail; training can oscillate, diverge, or freeze. The fix is to use two DQNs. The online model learns at every step and drives the agent, while the target model, a clone of it, is used only to compute the targets. The target model's weights are copied from the online model at regular intervals (e.g., every 10,000 steps for Atari), so the targets stay fixed in between and the feedback loop is damped:\n\n```python\nimport copy\ntarget_model = copy.deepcopy(model)                 # created once\n# in each training step, compute the targets with the target model:\nwith torch.inference_mode():\n    max_next_Q = target_model(next_state).max(dim=1).values\n# every sync_interval steps:\ntarget_model.load_state_dict(model.state_dict())\n```"
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "What problem does each of these DQN improvements address: double DQN, prioritized experience replay, and dueling DQN?",
+        "a": "- Double DQN: taking the max over noisy Q-estimates tends to overestimate Q-values. So the online model picks the best next action and the target model evaluates it: y = r + \u03b3\u00b7Q_target(s\u2032, argmax\u2090\u2032 Q_online(s\u2032, a\u2032)).\n- Prioritized experience replay (PER): uniform sampling wastes time on unsurprising experiences. Each one gets priority p = |\u03b4|, its latest TD error plus a small constant (new ones start very high so they're sampled at least once), and is sampled with probability P \u221d p^\u03b6 (\u03b6 = 0 means uniform). To compensate for this bias, its loss is weighted by w = (n\u00b7P)^(\u2212\u03b2), where n is the buffer size and \u03b2 is raised toward 1 during training.\n- Dueling DQN: the network estimates a state value V(s) and an advantage A(s, a) per action, and outputs Q(s, a) = V(s) + A(s, a) \u2212 max\u2090\u2032 A(s, a\u2032), since the best action's advantage should be 0."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "How does an actor-critic agent learn? Walk through its training step.",
+        "a": "An actor-critic trains a policy network (the actor) and a value network (the critic) together. They often share their lower layers, with an actor head that outputs action logits and a critic head that estimates the state value V(s). At every environment step, the agent samples an action, observes r and s\u2032, computes the target y = r + \u03b3\u00b7V(s\u2032) (just r if the episode ended) without tracking gradients, then:\n\n```python\ntd_error = target_value - state_value               # \u03b4 = y \u2212 V(s)\nactor_loss = -log_prob * td_error.detach()\ncritic_loss = criterion(state_value, target_value)  # e.g., MSE\nloss = actor_loss + critic_weight * critic_loss     # critic weighted lower, e.g., 0.3\noptimizer.zero_grad()\nloss.backward()\noptimizer.step()\n```\n\nThe actor loss is REINFORCE's with the TD error in place of the return: it makes actions that did better than the critic expected more likely. detach() stops the actor loss from updating the critic. Using the critic's estimate instead of a full-episode return reduces the noise and lets the actor learn at every step, and like policy gradients, it supports stochastic policies and continuous actions."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "What do A3C, A2C, SAC, and PPO each add to the basic actor-critic, and which would you reach for first?",
+        "a": "- A3C (asynchronous advantage actor-critic): several agents explore their own copies of the environment in parallel, asynchronously pushing weight updates to a master network and pulling its latest weights; the critic estimates action advantages rather than state values.\n- A2C: A3C without the asynchrony; synchronous updates over larger batches make better use of a GPU.\n- SAC (soft actor-critic): maximizes the entropy of its actions as well as the rewards (be as unpredictable as possible while still earning rewards), which drives exploration and makes it very sample-efficient.\n- PPO (proximal policy optimization): built on A2C, it clips the loss to prevent excessively large policy updates, which often destabilize training; it's a simpler take on TRPO.\n\nRule of thumb: PPO is a strong general-purpose default, SAC is the most sample-efficient for continuous actions (e.g., robotics), and DQN remains strong for discrete tasks like Atari or board games."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "How do you train and use a PPO agent on an Atari game with Stable-Baselines3?",
+        "a": "make_atari_env(\"BreakoutNoFrameskip-v4\", n_envs=4) creates a vectorized environment bundling 4 copies of the game, stepped together with one action per copy, and preprocesses frames to 84 \u00d7 84 grayscale. Wrapping it in VecFrameStack(envs, n_stack=4) stacks the last 4 frames along the channel axis, so a single observation captures motion. Beware that SB3's vectorized API differs from Gymnasium's: reset() returns only the observations, and step() returns (obs, rewards, dones, infos), with no truncated flag.\n\n```python\nfrom stable_baselines3 import PPO\nfrom stable_baselines3.common.callbacks import CheckpointCallback\nppo = PPO(\"CnnPolicy\", envs_stacked, n_steps=256, batch_size=256, n_epochs=4,\n          clip_range=0.1, vf_coef=0.5, ent_coef=0.01, gamma=0.99)\nppo.learn(total_timesteps=10_000_000,\n          callback=CheckpointCallback(save_freq=100_000, save_path=\"ckpts\"))\nppo.save(\"ppo_breakout\")                    # later: PPO.load(\"ppo_breakout\")\naction, _ = ppo.predict(obs, deterministic=True)\n```\n\n\"CnnPolicy\" builds a CNN with an actor head and a critic head. n_steps is the rollout length per environment before each update, n_epochs the number of optimization passes over that rollout, clip_range limits how much the policy can change per update, vf_coef weights the value loss, and ent_coef weights an entropy bonus that encourages exploration."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-appa-autodiff",
+    "title": "Appendix A \u2014 Autodiff",
+    "sources": [
+      "textbook/hands_on_ml/appA-autodiff/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Differentiate f(x, y) = x\u00b2y + y + 2 by hand, evaluate both partial derivatives at (3, 4), and explain why manual differentiation doesn't scale.",
+        "a": "Treat the other variable as a constant and apply the basic rules: the derivative of a constant is 0, the derivative of x\u207f is n\u00b7x\u207f\u207b\u00b9, the derivative of a sum is the sum of the derivatives, and constant factors carry through.\n\n- \u2202f/\u2202x = y\u00b7\u2202(x\u00b2)/\u2202x + 0 + 0 = 2xy, which is 2\u00b73\u00b74 = 24 at (3, 4).\n- \u2202f/\u2202y = x\u00b2\u00b7\u2202y/\u2202y + 1 + 0 = x\u00b2 + 1, which is 9 + 1 = 10 at (3, 4).\n\nThe result is exact and reusable, but for complex functions like a deep network's loss, deriving it by hand is tedious and error-prone, and it would have to be redone every time the model changes. That's why deep learning frameworks compute gradients automatically."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How does finite difference approximation compute a gradient, and what are its drawbacks and its main practical use?",
+        "a": "It replaces the limit in the definition of the derivative with a tiny \u03b5 (Newton's difference quotient): \u2202f/\u2202x(x, y) \u2248 (f(x + \u03b5, y) \u2212 f(x, y))/\u03b5, and likewise for each other input:\n\n```python\ndef gradients(f, params, eps=1e-5):\n    base = f(*params)\n    grads = []\n    for i in range(len(params)):\n        tweaked = list(params)\n        tweaked[i] += eps\n        grads.append((f(*tweaked) - base) / eps)\n    return grads\n```\n\nDrawbacks: it's approximate (for f(x, y) = x\u00b2y + y + 2 at (3, 4), \u2202f/\u2202x comes out as about 24.00004 instead of 24), because a finite \u03b5 leaves an error while a tinier \u03b5 amplifies floating-point rounding; and it needs n + 1 evaluations of f for n parameters, which is hopeless for networks with millions of parameters. But it's trivial to implement, so it's a great way to check gradients computed by other methods: if they disagree, the other method is probably buggy."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "Walk through forward-mode autodiff on the computation graph of g(x, y) = 5 + xy to get \u2202g/\u2202x. What kind of result does it produce?",
+        "a": "It traverses the graph from the inputs to the output, building each node's derivative from the derivatives of its inputs:\n\n1. Leaves: the constant 5 gives 0, x gives \u2202x/\u2202x = 1, and y gives \u2202y/\u2202x = 0.\n2. Product node x\u00b7y: the product rule \u2202(u\u00b7v)/\u2202x = u\u00b7\u2202v/\u2202x + v\u00b7\u2202u/\u2202x gives x\u00b70 + y\u00b71.\n3. Sum node: the derivative of a sum is the sum of the derivatives, so \u2202g/\u2202x = 0 + (x\u00b70 + y\u00b71).\n\nAfter pruning the useless operations, this simplifies to \u2202g/\u2202x = y. The output is itself a computation graph (symbolic differentiation): you can evaluate it for any x and y, and run forward-mode autodiff on it again to get higher-order derivatives. The downside is that for complex functions the derivative graph can become huge and hard to simplify, which hurts performance."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "What are dual numbers, and how do they give you both f(3, 4) and \u2202f/\u2202x(3, 4) in one pass for f(x, y) = x\u00b2y + y + 2?",
+        "a": "A dual number is a + b\u03b5, where \u03b5 is an infinitesimal such that \u03b5\u00b2 = 0 (though \u03b5 \u2260 0); in memory it's just the pair (a, b). The arithmetic follows from \u03b5\u00b2 = 0: (a + b\u03b5) + (c + d\u03b5) = (a + c) + (b + d)\u03b5, and (a + b\u03b5)\u00b7(c + d\u03b5) = ac + (ad + bc)\u03b5. The key property is h(a + b\u03b5) = h(a) + b\u00b7h\u2032(a)\u00b7\u03b5, so evaluating h(a + \u03b5) yields both h(a) and h\u2032(a).\n\nFor \u2202f/\u2202x at (3, 4), evaluate f(3 + \u03b5, 4):\n- x\u00b2 = (3 + \u03b5)\u00b2 = 9 + 6\u03b5\n- x\u00b2y = (9 + 6\u03b5)\u00b74 = 36 + 24\u03b5\n- x\u00b2y + y + 2 = 42 + 24\u03b5\n\nSo f(3, 4) = 42 and \u2202f/\u2202x(3, 4) = 24. This is forward-mode autodiff computed numerically, without building a derivative graph. \u2202f/\u2202y needs a second pass: f(3, 4 + \u03b5) = 42 + 10\u03b5."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Sketch a minimal dual-number class in Python and use it to compute \u2202f/\u2202x and \u2202f/\u2202y for f(x, y) = x\u00b7x\u00b7y + y + 2 at (3, 4).",
+        "a": "Store the value and the \u03b5 coefficient, implement the dual-number rules for addition and multiplication, and promote plain numbers to dual numbers with an \u03b5 part of 0:\n\n```python\nclass Dual:\n    def __init__(self, value, eps=0.0):\n        self.value, self.eps = value, eps\n    def __add__(self, o):\n        o = o if isinstance(o, Dual) else Dual(o)\n        return Dual(self.value + o.value, self.eps + o.eps)\n    def __mul__(self, o):\n        o = o if isinstance(o, Dual) else Dual(o)\n        return Dual(self.value * o.value, self.value * o.eps + self.eps * o.value)\n    __radd__, __rmul__ = __add__, __mul__\n\nf = lambda x, y: x * x * y + y + 2\n```\n\nTo differentiate with respect to one input, give it an \u03b5 part of 1 and the others 0: f(Dual(3, 1), Dual(4)) has value 42 and eps 24.0, which is \u2202f/\u2202x, and f(Dual(3), Dual(4, 1)).eps is 10.0, which is \u2202f/\u2202y. Each input needs its own pass."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "How many passes or function evaluations do finite differences, forward-mode, and reverse-mode autodiff need for the gradient of a loss with n parameters, and why?",
+        "a": "- Finite differences: n + 1 evaluations of the function, and the result is only approximate.\n- Forward mode: n passes, because each pass (seeding one input with \u03b5) yields the derivatives with respect to a single input. Exact, but 1,000 parameters means 1,000 passes.\n- Reverse mode: one forward pass plus one reverse pass per output, whatever n is. A loss is a single output, so two passes give the whole gradient.\n\nThe chain rule explains the asymmetry: \u2202z/\u2202x = \u2202s\u2081/\u2202x \u00b7 \u2202s\u2082/\u2202s\u2081 \u00b7 \u2026 \u00b7 \u2202z/\u2202s\u2099. Forward mode multiplies these factors starting from the input side, reverse mode from the output side, so reverse mode computes the output-side factors once and shares them across all inputs. With few inputs and many outputs, forward mode is cheaper; neural nets have many inputs (the parameters) and one output (the loss), hence reverse mode."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Walk through reverse-mode autodiff by hand for f(x, y) = x\u00b2y + y + 2 at x = 3, y = 4.",
+        "a": "Name the intermediate nodes: a = x\u00b7x, b = a\u00b7y, c = y + 2, and f = b + c.\n\nForward pass (compute and keep every node's value): a = 9, b = 36, c = 6, f = 42.\n\nReverse pass, from the output down, applying the chain rule \u2202f/\u2202node = \u2202f/\u2202parent \u00b7 \u2202parent/\u2202node:\n- \u2202f/\u2202f = 1\n- \u2202f/\u2202b = 1 and \u2202f/\u2202c = 1, since a sum passes the gradient through unchanged\n- \u2202f/\u2202a = \u2202f/\u2202b \u00b7 y = 4\n- \u2202f/\u2202y = \u2202f/\u2202b \u00b7 a + \u2202f/\u2202c \u00b7 1 = 9 + 1 = 10, because y feeds two nodes and their contributions add up\n- \u2202f/\u2202x = \u2202f/\u2202a \u00b7 2x = 4 \u00b7 6 = 24\n\nThese two passes give every partial derivative, however many inputs there are. Notice that the reverse pass reused values stored during the forward pass (x, y, and a)."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "How does PyTorch's autograd map onto reverse-mode autodiff: what plays the role of the graph, the forward pass, and the reverse pass?",
+        "a": "- The graph: built on the fly as operations run. Every tensor computed from tensors with requires_grad=True gets a grad_fn attribute, an operation-specific backward node (e.g., MulBackward0) linked to the nodes of its inputs. Gradients are computed for the leaves created with requires_grad=True (typically the parameters).\n- The forward pass: simply running your code. Each backward node also saves whatever its local derivative will need (e.g., both factors of a product).\n- The reverse pass: loss.backward() walks the graph from the loss back to the leaves, applying the chain rule at each node, summing contributions when a tensor was used several times, and adding the results into each leaf's .grad attribute.\n\nA fresh graph is recorded on every forward pass, containing only the operations that actually ran, so Python loops and conditionals just work. Autodiff also copes with functions that aren't differentiable everywhere, as long as they're differentiable at the points where you evaluate them."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "How do you compute second-order derivatives with PyTorch's autograd?",
+        "a": "Use torch.autograd.grad(), which returns the gradients instead of accumulating them into .grad, with create_graph=True so that the gradient computation is itself recorded as a graph you can differentiate again:\n\n```python\nx = torch.tensor(3.0, requires_grad=True)\ny = torch.tensor(4.0, requires_grad=True)\nf = x * x * y + y + 2\ndfdx, dfdy = torch.autograd.grad(f, [x, y], create_graph=True)  # 2xy = 24, x\u00b2 + 1 = 10\nd2f_dx2, d2f_dxdy = torch.autograd.grad(dfdx, [x, y])            # 2y = 8, 2x = 6\n```\n\nTwo gotchas: by default a graph is freed once it's been backpropagated through, so pass retain_graph=True if you need to go through the same graph again; and if an input doesn't affect the output (e.g., differentiating \u2202f/\u2202y = x\u00b2 + 1 with respect to y), grad() raises an error unless you pass allow_unused=True, in which case it returns None for that input."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "Why does reverse-mode autodiff make training use much more memory than inference, and how can you trade computation for memory?",
+        "a": "The reverse pass needs values from the forward pass: for instance, the derivative of u\u00b7v with respect to u is v. So every intermediate result that a backward step depends on (such as each layer's activations) must be kept until the reverse pass has used it, whereas inference can discard each activation once the next layer has consumed it. That's also why inference should run under torch.no_grad() or torch.inference_mode(): no graph is recorded, so nothing extra is kept.\n\nWith deep networks and large inputs, these stored values can exhaust GPU memory. Besides shrinking the model or the batch, you can offload them to CPU RAM, or keep only some of them (e.g., every other layer's) and recompute the missing ones from the nearest stored value during the reverse pass. This gradient (or activation) checkpointing trades extra computation for memory; PyTorch provides it in torch.utils.checkpoint."
+      }
+    ]
+  },
+  {
+    "id": "textbook-hands-on-ml-appb-mixed-precision-and-quantization",
+    "title": "Appendix B \u2014 Mixed Precision and Quantization",
+    "sources": [
+      "textbook/hands_on_ml/appB-mixed-precision-and-quantization/additional_exercises.md"
+    ],
+    "cards": [
+      {
+        "key": "a1",
+        "n": 1,
+        "kind": "additional",
+        "q": "Estimate the memory needed to train a 1-billion-parameter model in fp32 with Adam. Why does this motivate lower precision and quantization?",
+        "a": "Each fp32 parameter takes 4 bytes, so the weights alone need 4 GB; inference also needs room for the current batch's activations. Training adds a gradient per parameter (another 4 GB) and Adam's two extra values per parameter (8 GB): about 16 GB before counting the activations saved for the backward pass, which often dominate. Big tensors also cost time moving data between CPU and GPU, plus storage, download time and energy.\n\nSwitching to 16-bit floats halves the size of the weights and activations. Quantizing the weights to 8-bit integers divides their size by almost 4 (almost 8 with 4 bits), and integer arithmetic is also faster and more energy efficient: on smartphones, int8 operations are typically 2 to 4 times faster than fp32 and use 5 to 10 times less energy."
+      },
+      {
+        "key": "a2",
+        "n": 2,
+        "kind": "additional",
+        "q": "How is a float32 number laid out in bits, and how do you compute its value?",
+        "a": "IEEE 754 float32 has 1 sign bit S, 8 exponent bits E (0 to 255) and 23 fraction bits F:\n- Normalized numbers (E from 1 to 254, the usual case): v = (\u22121)\u02e2 \u00b7 2\u1d31\u207b\u00b9\u00b2\u2077 \u00b7 (1 + F \u00b7 2\u207b\u00b2\u00b3). The exponent is stored with a bias of 127, and the last factor, the significand, holds the significant digits.\n- Subnormal numbers (E = 0, F > 0): v = (\u22121)\u02e2 \u00b7 F \u00b7 2\u207b\u00b9\u2074\u2079, covering the tiniest magnitudes, down to about 1.4 \u00d7 10\u207b\u2074\u2075.\n- E = 0 and F = 0 gives \u00b10; E = 255 gives \u00b1\u221e if F = 0, and NaN otherwise.\n\nThe largest float32 is about 3.4 \u00d7 10\u00b3\u2078. Other float formats only change the split: float16 has 5 exponent bits (bias 15) and 10 fraction bits, bfloat16 has 8 and 7, and fp8 E4M3 has 4 and 3. Exponent bits buy range; fraction bits buy precision."
+      },
+      {
+        "key": "a3",
+        "n": 3,
+        "kind": "additional",
+        "q": "How are weights quantized to fewer than 8 bits usually stored in memory?",
+        "a": "They're packed several per byte. For example, two 4-bit values fit in one unsigned byte using bit shifts and masks:\n\n```python\npacked = torch.tensor((12 << 4) | 5, dtype=torch.uint8)  # stores 12 and 5\nhigh, low = packed >> 4, packed & 0xF  # unpacks 12 and 5\n```\n\nLikewise, four 2-bit values fit in a byte. Ternary weights (\u22121, 0 or +1) can be stored five per byte by adding 1 to each and treating them as base-3 digits: since 3\u2075 = 243 \u2264 256, that's 1.6 bits per weight, 20 times less than fp32. You can even go down to 1 bit per weight (8 per byte, each bit meaning \u22121 or +1), but keeping reasonable accuracy with such severe quantization is very hard."
+      },
+      {
+        "key": "a4",
+        "n": 4,
+        "kind": "additional",
+        "q": "How do you convert a PyTorch model to half precision, or build it in 16 bits from the start, and what do you need to watch out for?",
+        "a": "- model.half() converts all the parameters of a trained fp32 model to float16. This halves the model's size, usually with little impact on quality, and it often runs almost twice as fast on GPUs with 16-bit support.\n- The model then expects 16-bit inputs and produces 16-bit outputs, e.g., X = torch.rand(3, 10, dtype=torch.float16); feeding it fp32 inputs raises a dtype mismatch error.\n- To build a 16-bit model directly, pass dtype=torch.float16 when creating each tensor or layer, such as nn.Linear(10, 100, dtype=torch.float16), or call torch.set_default_dtype(torch.float16), which affects every tensor and module created afterward.\n- With the Transformers library, from_pretrained(..., dtype=\"auto\") picks the best float type for the checkpoint and your hardware.\n\nShrinking a trained model this way is fairly safe, but training directly in float16 can fail to converge because of underflows and overflows."
+      },
+      {
+        "key": "a5",
+        "n": 5,
+        "kind": "additional",
+        "q": "Compare float16 and bfloat16 for training. What can go wrong with each?",
+        "a": "Both use 16 bits, split differently:\n- float16 (5 exponent bits, 10 fraction bits) is more precise but only covers about 6 \u00d7 10\u207b\u2078 to 65,504. Gradient updates smaller than about 6 \u00d7 10\u207b\u2078 underflow to zero and are ignored, while values above 65,504 overflow to infinity, which soon makes the loss infinite or NaN.\n- bfloat16 (8 exponent bits, 7 fraction bits) has roughly float32's range, about 9.2 \u00d7 10\u207b\u2074\u00b9 to 3.4 \u00d7 10\u00b3\u2078, so underflow and overflow are rarely an issue. But its low precision can swallow small updates to large weights: 123 + 0.045 rounds back to 123 in bfloat16 (float16 gives 123.0625), so training can stall. It has also historically had less hardware support.\n\nIf you still hit convergence issues with both, switch to mixed-precision training."
+      },
+      {
+        "key": "a6",
+        "n": 6,
+        "kind": "additional",
+        "q": "What is loss scaling, why does float16 training need it, and how does dynamic loss scaling choose the factor?",
+        "a": "Many gradients are smaller than float16's smallest positive value (about 6 \u00d7 10\u207b\u2078), so they underflow to zero. Multiplying the loss by a large factor (e.g., 2\u00b9\u2076) multiplies every gradient by the same factor during backpropagation, lifting them into range. The gradients must be scaled back down before the optimizer step, ideally in fp32 so they don't underflow again. Too large a factor causes overflows instead: infinite or NaN gradients.\n\nYou can choose a fixed factor from gradient statistics measured during a short fp32 run, or use dynamic loss scaling: if any gradient is infinite or NaN, skip that optimizer step and reduce the factor (e.g., halve it); otherwise, increase it periodically (e.g., double it every 2,000 steps). PyTorch's torch.amp.GradScaler implements this."
+      },
+      {
+        "key": "a7",
+        "n": 7,
+        "kind": "additional",
+        "q": "Walk through one iteration of mixed-precision training. Why does it use less memory than fp32 training despite keeping two copies of the weights?",
+        "a": "1. Keep a primary copy of the parameters in fp32, and make a 16-bit copy of them.\n2. Run the forward pass with the 16-bit weights, so the activations are 16-bit too.\n3. Scale up the loss to prevent gradient underflow, and backpropagate in 16 bits.\n4. Switch to fp32 to scale the gradients back down.\n5. Apply the optimizer step to the fp32 primary weights, so small updates to large weights aren't rounded away (fp32 has 23 fraction bits).\n\nThe parameters take 50% more memory than in fp32 training, but most training memory goes to activations, which are now 16-bit, so mixed precision needs only a bit more than half the memory, and it typically runs about twice as fast (depending on the model, batch size and hardware). After training, you can drop the fp32 copy and keep a pure 16-bit model."
+      },
+      {
+        "key": "a8",
+        "n": 8,
+        "kind": "additional",
+        "q": "Write a mixed-precision training loop in PyTorch with torch.autocast and GradScaler, and explain what each call does.",
+        "a": "Only the forward pass and the loss computation go inside the autocast context:\n\n```python\nfrom torch.amp import GradScaler\n\nscaler = GradScaler(device=\"cuda\", init_scale=2.0**16)\nfor X_batch, y_batch in train_loader:\n    X_batch, y_batch = X_batch.to(\"cuda\"), y_batch.to(\"cuda\")\n    with torch.autocast(device_type=\"cuda\", dtype=torch.float16):\n        loss = criterion(model(X_batch), y_batch)\n    scaler.scale(loss).backward()  # backprop the scaled loss\n    scaler.step(optimizer)  # unscale the grads; skip the step if inf/NaN\n    scaler.update()  # adjust the scale factor\n    optimizer.zero_grad()\n```\n\nUnder autocast the parameters stay fp32, but the operations that benefit most from 16 bits, such as matrix multiplications and convolutions, run in float16, while operations like reductions (e.g., torch.sum()), which gain little and could lose precision, don't. With the Hugging Face Trainer, just set fp16=True or bf16=True in TrainingArguments."
+      },
+      {
+        "key": "a9",
+        "n": 9,
+        "kind": "additional",
+        "q": "Explain asymmetric linear quantization to n-bit unsigned integers: the scale, the zero point, and dequantization.",
+        "a": "With a = min\u1d62 w\u1d62 and b = max\u1d62 w\u1d62, the range [a, b] maps linearly onto the integers 0 to 2\u207f \u2212 1:\n\ns = (b \u2212 a) / (2\u207f \u2212 1), z = \u2212round(a / s), q\u1d62 = round(w\u1d62 / s) + z (clamped to [0, 2\u207f \u2212 1])\n\n- s, the scale, is the float step between consecutive integers.\n- z, the zero point, is the integer that represents 0.0.\n- Dequantization approximately recovers each float: w\u1d62 \u2248 s \u00b7 (q\u1d62 \u2212 z). The error is the quantization noise; it grows as n shrinks and accumulates through deep networks.\n\nFor example, with 8 bits and weights in [\u22120.1, 0.6], s \u2248 0.002745 and z = 36, so 0.1 becomes 72, which dequantizes to about 0.0988. A useful property: 0.0 maps exactly to z and comes back as exactly 0.0, which matters for sparse weights and for the many zeros that ReLU outputs."
+      },
+      {
+        "key": "a10",
+        "n": 10,
+        "kind": "additional",
+        "q": "How does symmetric linear quantization differ from asymmetric quantization, and when would you use each?",
+        "a": "Symmetric quantization maps values to signed integers centered on zero, with no zero point:\n\nq\u1d62 = round(w\u1d62 / s), with s = max\u1d62 |w\u1d62| / (2\u207f\u207b\u00b9 \u2212 1)\n\nWith 8 bits that's \u2212127 to +127 (leaving out \u2212128 keeps the range symmetric), and 0.0 always maps to 0. The trade-offs:\n- Symmetric is simpler and often a bit faster, since there's no zero point to handle. But if the values aren't centered on zero, part of the integer range goes unused: all-positive values would only use 0 to 127, so precision suffers.\n- Asymmetric fits the actual [min, max] range, so it's more precise for skewed data.\n\nIn practice, symmetric quantization is generally preferred for weights, which tend to be fairly symmetric around zero, and asymmetric quantization for activations, especially after ReLU, which outputs only nonnegative values."
+      },
+      {
+        "key": "a11",
+        "n": 11,
+        "kind": "additional",
+        "q": "How do you quantize and dequantize a tensor in PyTorch with torch.quantize_per_tensor()?",
+        "a": "Pass the float tensor, the scale, the zero point and a quantized dtype. You get a quantized tensor that stores the integers together with the scale and zero point:\n\n```python\nw = torch.tensor([0.1, -0.1, 0.6, 0.0])\ns = (w.max() - w.min()) / 255.  # asymmetric, 8 bits\nz = -(w.min() / s).round()\nqw = torch.quantize_per_tensor(w, scale=s, zero_point=z, dtype=torch.quint8)\nqw.dequantize()  # tensor([ 0.0988, -0.0988,  0.6012,  0.0000])\n\ns_sym = w.abs().max() / 127.  # symmetric: zero point 0, signed integers\nqw_sym = torch.quantize_per_tensor(w, scale=s_sym, zero_point=0,\n                                   dtype=torch.qint8)\n```\n\ntorch.quint8 holds unsigned 8-bit integers (for asymmetric quantization) and torch.qint8 signed ones (for symmetric quantization). Printing a quantized tensor shows its dequantized values along with the scheme (per_tensor_affine), scale and zero_point, while qw.int_repr() returns the raw integers (72, 0, 255 and 36 here). torch.quantize_per_channel() instead gives each channel its own scale and zero point: more precise, at the cost of storing more quantization parameters."
+      },
+      {
+        "key": "a12",
+        "n": 12,
+        "kind": "additional",
+        "q": "What's the difference between dynamic and static quantization, and when is each a good fit?",
+        "a": "Weights are fixed after training, so they can always be quantized ahead of time. The difference is how activations are handled, since their range depends on the inputs:\n- Dynamic quantization computes each activation's range, and hence its scale and zero point, on the fly for every batch. It needs no calibration data and adapts to each input, so it loses less accuracy, but the extra work makes it slower. It's best for MLPs, RNNs and transformers.\n- Static quantization runs a representative calibration dataset through the model once to estimate typical activation ranges, then reuses those fixed parameters for all inputs, so the whole network can compute with integers. It's faster but less precise, which makes it best for CNNs and maximum inference speed, and it's mandatory on edge devices without a floating-point unit.\n\nBoth degrade accuracy somewhat, especially at 4 bits or fewer."
+      },
+      {
+        "key": "a13",
+        "n": 13,
+        "kind": "additional",
+        "q": "How do you apply post-training dynamic quantization with torch.ao.quantization, and what does the quantized model do at inference?",
+        "a": "Pick the quantization engine for the CPU you'll run on (\"x86\" or \"fbgemm\" for x86 CPUs, \"qnnpack\" for ARM and mobile), then tell quantize_dynamic() which layer types to quantize:\n\n```python\nfrom torch.ao.quantization import quantize_dynamic\n\ntorch.backends.quantized.engine = \"x86\"  # or \"qnnpack\" on ARM\nqmodel = quantize_dynamic(model, {nn.Linear}, dtype=torch.qint8)\ny_pred = qmodel(torch.randn(3, 10))  # float inputs and outputs\n```\n\nEach nn.Linear becomes a DynamicQuantizedLinear layer with int8 weights. At inference, it quantizes its float inputs on the fly (computing a new scale and zero point for each batch), multiplies integers using 32-bit integer accumulators, and dequantizes the result, so the next layer receives floats as usual. RNN layer types can be included in the set too.\n\nGotcha: torch.ao.quantization's engines only target CPUs (there's none for CUDA or other accelerators), so for GPUs use a library such as bitsandbytes or the separate TorchAO library."
+      },
+      {
+        "key": "a14",
+        "n": 14,
+        "kind": "additional",
+        "q": "Walk through post-training static quantization with torch.ao.quantization.",
+        "a": "The whole workflow takes a few lines:\n\n```python\nfrom torch.ao.quantization import get_default_qconfig, QuantStub, DeQuantStub\n\nmodel = nn.Sequential(QuantStub(), nn.Linear(10, 100), nn.ReLU(),\n                      nn.Linear(100, 1), DeQuantStub())\n# [...] train the model normally, in fp32\nmodel.qconfig = get_default_qconfig(\"x86\")\ntorch.ao.quantization.prepare(model, inplace=True)\nfor X_batch, _ in calibration_loader:\n    model(X_batch)\ntorch.ao.quantization.convert(model, inplace=True)\n```\n\n1. QuantStub and DeQuantStub mark where tensors enter and leave the quantized part of the model; until conversion they just pass data through.\n2. The qconfig for the chosen engine specifies the quantized dtype, the quantization scheme, and the observers that track the ranges of weights and activations.\n3. prepare() inserts the observers into the model, e.g., MinMaxObserver, or HistogramObserver, which finds the range that minimizes quantization error.\n4. Calibration: running representative batches lets the observers record typical activation ranges.\n5. convert() removes the observers and swaps in quantized modules (Quantize, QuantizedLinear, DeQuantize): the model still takes and returns floats but computes with integers internally."
+      },
+      {
+        "key": "a15",
+        "n": 15,
+        "kind": "additional",
+        "q": "How does quantization-aware training work, how do gradients get through the rounding, and how do you set it up with torch.ao.quantization?",
+        "a": "QAT trains the model, or fine-tunes a pretrained one for a few epochs at a low learning rate, with fake quantization: in the forward pass, weights and some activations are quantized and immediately dequantized, so the model experiences exactly the noise real quantization will add and learns to cope with it. This loses less accuracy than post-training quantization and makes aggressive quantization (4 bits or less) practical.\n\nRounding has zero gradient almost everywhere, so backpropagation uses the straight-through estimator: the backward pass treats fake quantization as the identity function, letting gradients through unchanged. This works because the loss surface is fairly smooth locally, so the gradient at the rounded value is close to the gradient at the original one.\n\nIn PyTorch: set model.qconfig = get_default_qat_qconfig(engine), call torch.ao.quantization.prepare_qat(model, inplace=True) to insert fake quantization and observers, train normally, then call convert(model.eval(), inplace=True)."
+      },
+      {
+        "key": "a16",
+        "n": 16,
+        "kind": "additional",
+        "q": "How do you load an LLM in 4 bits on a GPU with bitsandbytes and the Transformers library, and what happens at inference?",
+        "a": "Describe the quantization with a BitsAndBytesConfig and pass it to from_pretrained():\n\n```python\nfrom transformers import AutoModelForCausalLM, BitsAndBytesConfig\n\nbnb_config = BitsAndBytesConfig(load_in_4bit=True,\n                                bnb_4bit_quant_type=\"nf4\",\n                                bnb_4bit_compute_dtype=torch.bfloat16)\nmodel = AutoModelForCausalLM.from_pretrained(\n    \"TinyLlama/TinyLlama-1.1B-Chat-v1.0\", device_map=\"auto\",\n    quantization_config=bnb_config)\n```\n\nThe weights are quantized to 4 bits as they're loaded onto the GPU, with no extra step, and you then use the model normally (e.g., call generate()). Whenever some weights are needed during inference, they're dequantized on the fly to the compute dtype (bfloat16 here), the computation runs in that precision, and the dequantized copy is dropped, so memory use stays low. Setting bnb_4bit_use_double_quant=True also quantizes the quantization constants, saving a bit more memory. bitsandbytes is designed for NVIDIA GPUs (with limited CPU and AMD support), and it also offers 8-bit versions of optimizers such as Adam."
+      },
+      {
+        "key": "a17",
+        "n": 17,
+        "kind": "additional",
+        "q": "What is NF4 quantization, and which techniques does QLoRA combine to fine-tune huge models on a single GPU?",
+        "a": "NF4 (4-bit NormalFloat) is a nonlinear 4-bit scheme: instead of being evenly spaced, its 16 values between \u22121 and +1 sit at the quantiles of a zero-centered normal distribution, so they're denser near zero. Trained weights roughly follow such a distribution, so NF4 spends its precision where most weights are, which reduces the quantization error.\n\nQLoRA combines:\n- a frozen pretrained model quantized to NF4;\n- small trainable LoRA adapters, the only weights updated during fine-tuning;\n- activation checkpointing, to save activation memory;\n- paged optimizers, which use NVIDIA unified memory to move pages of data automatically between GPU and CPU RAM, absorbing memory spikes on long sequences;\n- double quantization, which quantizes the quantization parameters themselves.\n\nWith it, the authors fine-tuned a 65-billion-parameter model on a single 48 GB GPU with only a small accuracy drop."
+      },
+      {
+        "key": "a18",
+        "n": 18,
+        "kind": "additional",
+        "q": "How do GPTQ and AWQ quantize LLM weights to 4 bits while limiting the accuracy loss?",
+        "a": "Both are post-training, weight-only methods: weights are stored in 4 bits and dequantized when needed, while activations stay in floating point, which suits inference but not training.\n- GPTQ treats quantization as an optimization problem, one layer at a time: it finds the 4-bit weights that minimize the MSE between the layer's outputs with the original weights and with the quantized ones, then feeds the approximate outputs to the next layer and repeats.\n- AWQ (activation-aware weight quantization) protects the salient weights: those that multiply the largest activations on a calibration dataset (roughly the top 0.1% to 1%). Keeping them in float16 would work but isn't hardware-friendly, so AWQ scales them up before quantizing and scales the matching activations down (usually folded into the previous operation), searching for the scale factor with the lowest quantization error.\n\nYou can apply both with the Hugging Face Optimum library."
+      },
+      {
+        "key": "a19",
+        "n": 19,
+        "kind": "additional",
+        "q": "What is GGUF, what does a quantization type like Q4_K_M mean, and how do you load pre-quantized models from the Hugging Face Hub?",
+        "a": "GGUF is the binary file format used by llama.cpp and the tools built on it, such as Ollama and LM Studio. A single file bundles the weights with the tokenizer, special tokens, model architecture and other metadata. Its quantization types have names like Q4_K_M: Q4 means 4-bit, K means per-block quantization (each small block of weights gets its own quantization parameters), and M means the medium size and precision option at that bit width (the others being S and L). Newer types include IQ (importance-aware) and TQ (ternary).\n\nEvery Hub repository is a Git repo, and quantized variants often live on a separate branch, so pass revision= (a branch, tag or commit hash) to from_pretrained(), after checking the model card for what's available. For a GGUF model, pass the file name with gguf_file=, e.g., from_pretrained(\"TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF\", gguf_file=\"tinyllama-1.1b-chat-v1.0.Q6_K.gguf\")."
+      },
+      {
+        "key": "a20",
+        "n": 20,
+        "kind": "additional",
+        "q": "Besides lower precision and quantization, what other techniques can shrink a model?",
+        "a": "- Architecture changes before training: fewer layers or fewer neurons per layer, or weights shared across layers (as in ALBERT).\n- Pruning: remove the weights with the smallest magnitude or the smallest effect on the loss, or entire channels, layers or attention heads (torch.nn.utils.prune or Hugging Face Optimum).\n- Distillation: train a small student model to reproduce a large teacher model's outputs.\n- Layer fusion: after training, fold a batch-norm layer into the linear or convolutional layer just before it, since at inference both are linear operations (torch.quantization.fuse_modules(), or Optimum). Fuse before quantizing: fewer layers means less quantization noise.\n- Low-rank factorization: replace a big weight matrix with the product of two thin ones, e.g., Linear(10_000, 20_000) with Linear(10_000, 100) followed by Linear(100, 20_000), cutting about 200 million parameters to 3 million, and the compute with them. The middle size trades accuracy for size, and a trained layer can be factorized with SVD."
       }
     ]
   }
