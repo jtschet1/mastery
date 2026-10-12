@@ -5,3 +5,8 @@ textbook/**/*.pdf
 textbook/hands_on_ml/handson-mlp-main/
 
 __pycache__/
+
+# Generated sleep-narration audio/video (rebuild with textbook/sleep/make_sleep_audio.py)
+textbook/**/*.mp3
+textbook/**/*.mp4
+textbook/**/*.wav
